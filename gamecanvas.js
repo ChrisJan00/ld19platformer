@@ -48,11 +48,26 @@ var keys = new( function() {
     }
 })
 
+var assets = new( function() {
+    this.bgImage = new Image();
+    this.bgImage.src = "bg1.png";
+})
+
 // ------------------------------------------------------------------------
 // CONTROL FUNCTIONS
 function startGame() {
-    loadGame();
-    gameControl.runInterval = setInterval(mainLoop, 1000/gameControl.fps);
+    if (!assetsLoaded())
+	setTimeout(startGame(),500); // wait 500ms
+    else {
+	loadGame();
+	gameControl.runInterval = setInterval(mainLoop, 1000/gameControl.fps);
+    }
+}
+
+function assetsLoaded() {
+    if (!assets.bgImage.complete)
+	return false;
+    return true;
 }
 
 function loadGame() {
@@ -91,6 +106,9 @@ function update(dt) {
 function draw(dt) {
     var canvas = document.getElementById("canvas1");
     var context = canvas.getContext("2d");
+    
+    context.drawImage(assets.bgImage,0,0);
+    
     context.fillStyle = "#FF00AA";
     if (keys.upPressed) context.fillStyle = "#AAAA00";
     if (keys.downPressed) context.fillStyle = "#00FFFF";

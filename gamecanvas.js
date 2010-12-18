@@ -2,6 +2,11 @@
 // GLOBAL OBJECTS
 var runningLocallyOnFirefox = (location.href.substr(0,7) == "file://");
 
+var canvasWidth;
+var canvasHeight;
+// var canvasWidth = document.getElementById("canvas1").width;
+// var canvasHeight = document.getElementById("canvas1").height;
+
 // timer engine
 var gameControl = new( function() {
     this.fps = 60;
@@ -74,7 +79,7 @@ var player = new( function() {
     this.oldx = this.x;
     this.oldy = this.y;
     this.rejecting = false;
-    this.jumpStrength = 200;
+    this.jumpStrength = 160;
     this.horzSpeed = 100;
     this.gravityStrength = 500;
 })
@@ -109,14 +114,17 @@ function loadGame() {
     document.onkeydown = keys.keyPressed;
     document.onkeyup = keys.keyReleased;
     
+    canvasWidth = document.getElementById("canvas1").width;
+    canvasHeight = document.getElementById("canvas1").height;
+    
     assets.bgContext = assets.bgCanvas.getContext('2d');
     assets.bgCanvas.width = assets.bgImage.width;
     assets.bgCanvas.height = assets.bgImage.height;
     assets.bgContext.drawImage(assets.wallImage,0,0);
-    assets.wallData = myGetImageData( assets.bgContext, 0,0,1024,200 );
+    assets.wallData = myGetImageData( assets.bgContext, 0,0,canvasWidth,canvasHeight );
     assets.bgContext.clearRect(0,0,assets.bgCanvas.width, assets.bgCanvas.height);
     assets.bgContext.drawImage(assets.killImage,0,0);
-    assets.killData = myGetImageData( assets.bgContext, 0,0, 1024, 200 );
+    assets.killData = myGetImageData( assets.bgContext, 0,0, canvasWidth, canvasHeight );
     assets.bgContext.clearRect(0,0,assets.bgCanvas.width, assets.bgCanvas.height);
     assets.bgContext.drawImage(assets.bgImage,0,0);
     assets.bgContext.drawImage(assets.wallImage,0,0);
@@ -231,13 +239,13 @@ function draw(dt) {
         context.drawImage(assets.bgCanvas,0,0);
 	assets.bgVisible = true;
     }
-    if ((player.oldx>=0) && (player.oldx+player.width<=1024) && (player.oldy>=0) && (player.oldy+player.height<=200))
+    if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight))
         context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
     
     player.oldx = Math.floor(player.x+player.speedRight*dts + 0.5);
     player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
     
-    if ((player.oldx>=0) && (player.oldx+player.width<=1024) && (player.oldy>=0) && (player.oldy+player.height<=200)) {
+    if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight)) {
 	context.fillStyle = "#FFFFFF";
 	context.fillRect(player.oldx, player.oldy, player.width, player.height);
     }
@@ -259,7 +267,7 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 }
 
 function checkImageData(sx,sy) {
-    if ((sx <= 0) || (sx >= 1024) || (sy <= 0) || (sy >= 200))
+    if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
 	return true;
     return ( assets.wallData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 + 3] > 0 );
 }
@@ -290,7 +298,7 @@ function playerCollidedHorizontal() {
 }
 
 function checkKillData(sx,sy) {
-    if ((sx <= 0) || (sx >= 1024) || (sy <= 0) || (sy >= 200))
+    if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
 	return false;
     return ( assets.killData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 + 3] > 0 );
 }

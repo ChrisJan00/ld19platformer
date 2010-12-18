@@ -1,6 +1,6 @@
 // ---------------------------------------------------------
 // GLOBAL OBJECTS
-var runningLocallyOnFirefox = false;
+var runningLocallyOnFirefox = (location.href.substr(0,7) == "file://");
 
 // timer engine
 var gameControl = new( function() {
@@ -9,7 +9,7 @@ var gameControl = new( function() {
     this.stopTime = this.startTime;
     this.elapsed = 0;
     this.dt = 0;
-    this.step = 1000/this.fps;
+    this.step = 10;
     this.skip = false;
 } )
 
@@ -50,6 +50,7 @@ var keys = new( function() {
 })
 
 var assets = new( function() {
+    this.bgVisible = false;
     this.bgImage = new Image();
     this.bgImage.src = "bg1.png";
     this.bgCanvas = document.createElement('canvas');
@@ -64,6 +65,12 @@ var player = new( function() {
     this.speedUp = 0;
     this.speedRight = 0;
     this.standing = false;
+    this.oldx = this.x;
+    this.oldy = this.y;
+    this.rejecting = false;
+    this.jumpStrength = 200;
+    this.horzSpeed = 100;
+    this.gravityStrength = 500;
 })
 
 // ------------------------------------------------------------------------
@@ -134,31 +141,55 @@ function update(dt) {
     
     // vertical movement
     if (keys.upPressed && player.standing)
-	player.speedUp = 100;
+	player.speedUp = player.jumpStrength;
     else 
-	player.speedUp = player.speedUp - 10;
+	player.speedUp = player.speedUp - player.gravityStrength * dts;
     
     player.y = player.y - player.speedUp * dts;
     
     if (playerCollidedVertical()) {
-	if (player.speedUp < 0)
-	    player.standing = true;
-	player.speedUp = 0;
 	player.y = origy;
+	if (player.speedUp < 0) {
+	    player.standing = true;
+	    // "reject" the player
+	    var ii;
+	    for (ii=0;ii<player.height/2;ii++)
+		if (!checkImageData(player.x+player.width/2, player.y+player.height-ii))    
+		    break;
+	    player.y = player.y - ii;
+	}
+	player.speedUp = 0;
+	
     } else
 	player.standing = false;
     
     // horizontal movement
-    player.speedRight = 0;
-    if (keys.rightPressed)
-	player.speedRight = 100;
-    if (keys.leftPressed)
-	player.speedRight = -100;
+    if (!player.rejecting) {
+	player.speedRight = 0;
+	if (keys.rightPressed)
+	    player.speedRight = player.horzSpeed;
+	if (keys.leftPressed)
+	    player.speedRight = -player.horzSpeed;
+    }
 	
     player.x = player.x + player.speedRight * dts;
     if (playerCollidedHorizontal()) {
-	player.speedRight = 0;
-	player.x = origx;
+	player.rejecting = true;
+        player.x = origx;
+	// reject the player
+	if (player.speedRight != 0) {
+	    var ii;
+	    for (ii=0;ii<player.width/2;ii++)
+		if (!checkImageData(player.x+(player.speedRight>0?player.width-ii:ii), player.y+player.height/2)) {   
+		    player.rejecting = false;
+		    break;
+		}
+	    player.x = player.x + (player.speedRight>0? -ii : ii );
+	}
+	
+	if (!player.rejecting)
+	    player.speedRight = 0;
+	
     }
     
     // (by now) stop the game if out of bounds
@@ -171,10 +202,18 @@ function draw(dt) {
     var canvas = document.getElementById("canvas1");
     var context = canvas.getContext("2d");
     
-    context.drawImage(assets.bgCanvas,0,0);
+    if (!assets.bgVisible) {
+        context.drawImage(assets.bgCanvas,0,0);
+	assets.bgVisible = true;
+    }
+    context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
+    
+    player.oldx = Math.floor(player.x+player.speedRight*dts + 0.5);
+    player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
     
     context.fillStyle = "#FFFFFF";
-    context.fillRect(player.x+player.speedRight*dts, player.y-player.speedUp*dts, player.width, player.height);
+    context.fillRect(player.oldx, player.oldy, player.width, player.height);
+    
 }
 
 function myGetImageData(ctx, sx, sy, sw, sh) {

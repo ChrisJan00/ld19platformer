@@ -63,6 +63,8 @@ var assets = new( function() {
     this.killImage = new Image();
     this.killImage.src = "bg1_kill.png";
     this.bgCanvas = document.createElement('canvas');
+    this.walkerImage = new Image();
+    this.walkerImage.src = "walker.png";
 })
 
 var player = new( function() {
@@ -71,8 +73,7 @@ var player = new( function() {
     this.x = this.startx;
     this.y = this.starty;
     this.width = 8;
-    this.height = 20;
-    this.feetSize = 5;
+    this.height = 17;
     this.speedUp = 0;
     this.speedRight = 0;
     this.standing = false;
@@ -82,6 +83,9 @@ var player = new( function() {
     this.jumpStrength = 160;
     this.horzSpeed = 100;
     this.gravityStrength = 500;
+    this.frame = 0;
+    this.animationTimer = 0;
+    this.frameDelay = 1000/18;
 })
 
 // ------------------------------------------------------------------------
@@ -105,6 +109,8 @@ function assetsLoaded() {
     if (!assets.wallImage.complete)
 	return false;
     if (!assets.killImage.complete)
+	return false;
+    if (!assets.walkerImage.complete)
 	return false;
     return true;
 }
@@ -228,6 +234,15 @@ function update(dt) {
     
     if (playerDeathTouch())
 	resetPlayer();
+	
+    // animation
+    if ((player.speedRight != 0) && (player.standing)) {
+    player.animationTimer = player.animationTimer - dt;
+	while (player.animationTimer <= 0) {
+	    player.frame = (player.frame+1)%4;
+	    player.animationTimer = player.animationTimer + player.frameDelay;
+	}
+    }
 }
 
 function draw(dt) {
@@ -246,8 +261,9 @@ function draw(dt) {
     player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
     
     if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight)) {
-	context.fillStyle = "#FFFFFF";
-	context.fillRect(player.oldx, player.oldy, player.width, player.height);
+// 	context.fillStyle = "#FFFFFF";
+// 	context.fillRect(player.oldx, player.oldy, player.width, player.height);
+	context.drawImage(assets.walkerImage, player.frame*player.width, 0, player.width, player.height, player.oldx, player.oldy, player.width, player.height);
     }
     
 }

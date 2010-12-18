@@ -52,7 +52,11 @@ var keys = new( function() {
 var assets = new( function() {
     this.bgVisible = false;
     this.bgImage = new Image();
-    this.bgImage.src = "bg1.png";
+    this.bgImage.src = "bg1_trans.png";
+    this.wallImage = new Image();
+    this.wallImage.src = "bg1_walls.png";
+    this.killImage = new Image();
+    this.killImage.src = "bg1_kill.png";
     this.bgCanvas = document.createElement('canvas');
 })
 
@@ -93,6 +97,10 @@ function stopGame() {
 function assetsLoaded() {
     if (!assets.bgImage.complete)
 	return false;
+    if (!assets.wallImage.complete)
+	return false;
+    if (!assets.killImage.complete)
+	return false;
     return true;
 }
 
@@ -104,8 +112,15 @@ function loadGame() {
     assets.bgContext = assets.bgCanvas.getContext('2d');
     assets.bgCanvas.width = assets.bgImage.width;
     assets.bgCanvas.height = assets.bgImage.height;
+    assets.bgContext.drawImage(assets.wallImage,0,0);
+    assets.wallData = myGetImageData( assets.bgContext, 0,0,1024,200 );
+    assets.bgContext.clearRect(0,0,assets.bgCanvas.width, assets.bgCanvas.height);
+    assets.bgContext.drawImage(assets.killImage,0,0);
+    assets.killData = myGetImageData( assets.bgContext, 0,0, 1024, 200 );
+    assets.bgContext.clearRect(0,0,assets.bgCanvas.width, assets.bgCanvas.height);
     assets.bgContext.drawImage(assets.bgImage,0,0);
-    assets.bgData = myGetImageData( assets.bgContext, 0,0,1024,200 );
+    assets.bgContext.drawImage(assets.wallImage,0,0);
+    assets.bgContext.drawImage(assets.killImage,0,0);
     
 }
 
@@ -202,7 +217,9 @@ function update(dt) {
 	    player.speedRight = 0;
 	
     }
-
+    
+    if (playerDeathTouch())
+	resetPlayer();
 }
 
 function draw(dt) {
@@ -244,37 +261,57 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 function checkImageData(sx,sy) {
     if ((sx <= 0) || (sx >= 1024) || (sy <= 0) || (sy >= 200))
 	return true;
-    return ( assets.bgData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4] > 0 );
+    return ( assets.wallData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 + 3] > 0 );
 }
 
 function playerCollidedVertical() {
-    try {
-	// (checking only red component)
-	// check feet    
-	if ((player.speedUp < 0) && checkImageData(player.x+player.width/2, player.y+player.height ))
-	    return true;
-	
-	// check head   
-	if ((player.speedUp > 0) && checkImageData(player.x+player.width/2, player.y ))
-	    return true;
-	    
-	    
-    } catch(e) { }
+    // (checking only red component)
+    // check feet    
+    if ((player.speedUp < 0) && checkImageData(player.x+player.width/2, player.y+player.height ))
+        return true;
+    
+    // check head   
+    if ((player.speedUp > 0) && checkImageData(player.x+player.width/2, player.y ))
+        return true;
  
     return false;
 }
 
 function playerCollidedHorizontal() {
+    // check right side
+    if ((player.speedRight > 0) && checkImageData( player.x + player.width, player.y + player.height/2 ))
+        return true;
     
-    try {
-	// check right side
-	if ((player.speedRight > 0) && checkImageData( player.x + player.width, player.y + player.height/2 ))
-	    return true;
+    // check left side
+    if ((player.speedRight < 0) && checkImageData( player.x, player.y + player.height/2 ))
+        return true;
     
-	// check left side
-	if ((player.speedRight < 0) && checkImageData( player.x, player.y + player.height/2 ))
-	    return true;
-    
-    } catch(e) {}
     return false;
 }
+
+function checkKillData(sx,sy) {
+    if ((sx <= 0) || (sx >= 1024) || (sy <= 0) || (sy >= 200))
+	return false;
+    return ( assets.killData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 + 3] > 0 );
+}
+
+
+function playerDeathTouch() {
+    if ((player.speedUp < 0) && checkKillData(player.x+player.width/2, player.y+player.height ))
+        return true;
+    
+    // check head   
+    if ((player.speedUp > 0) && checkKillData(player.x+player.width/2, player.y ))
+        return true;
+ 
+     // check right side
+    if ((player.speedRight > 0) && checkKillData( player.x + player.width, player.y + player.height/2 ))
+        return true;
+    
+    // check left side
+    if ((player.speedRight < 0) && checkKillData( player.x, player.y + player.height/2 ))
+        return true;
+    
+    return false;
+}
+

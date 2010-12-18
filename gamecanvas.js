@@ -57,8 +57,10 @@ var assets = new( function() {
 })
 
 var player = new( function() {
-    this.x = 50;
-    this.y = 100;
+    this.startx = 50;
+    this.starty = 100;
+    this.x = this.startx;
+    this.y = this.starty;
     this.width = 8;
     this.height = 20;
     this.feetSize = 5;
@@ -133,6 +135,13 @@ function mainLoop() {
 //---------------------------------------
 // GAME LOGIC + GAME GRAPHICS
 
+function resetPlayer() {
+    player.x = player.startx;
+    player.y = player.starty;
+    player.speedUp = 0;
+    player.speedRight = 0;
+}
+
 // Note: dt is given in milliseconds
 function update(dt) {
     var dts = dt/1000;
@@ -151,12 +160,14 @@ function update(dt) {
 	player.y = origy;
 	if (player.speedUp < 0) {
 	    player.standing = true;
+	}
+	if (player.speedUp != 0) {
 	    // "reject" the player
 	    var ii;
 	    for (ii=0;ii<player.height/2;ii++)
-		if (!checkImageData(player.x+player.width/2, player.y+player.height-ii))    
+		if (!checkImageData(player.x+player.width/2, player.y+(player.speedUp<0?player.height-ii:ii)))    
 		    break;
-	    player.y = player.y - ii;
+	    player.y = player.y + (player.speedUp<0? -ii : ii);
 	}
 	player.speedUp = 0;
 	
@@ -191,10 +202,7 @@ function update(dt) {
 	    player.speedRight = 0;
 	
     }
-    
-    // (by now) stop the game if out of bounds
-    if ((player.x < 0) || (player.x + player.width > 1024) || (player.y < 0) || (player.y+player.height > 200))
-	stopGame(); 
+
 }
 
 function draw(dt) {
@@ -206,13 +214,16 @@ function draw(dt) {
         context.drawImage(assets.bgCanvas,0,0);
 	assets.bgVisible = true;
     }
-    context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
+    if ((player.oldx>=0) && (player.oldx+player.width<=1024) && (player.oldy>=0) && (player.oldy+player.height<=200))
+        context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
     
     player.oldx = Math.floor(player.x+player.speedRight*dts + 0.5);
     player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
     
-    context.fillStyle = "#FFFFFF";
-    context.fillRect(player.oldx, player.oldy, player.width, player.height);
+    if ((player.oldx>=0) && (player.oldx+player.width<=1024) && (player.oldy>=0) && (player.oldy+player.height<=200)) {
+	context.fillStyle = "#FFFFFF";
+	context.fillRect(player.oldx, player.oldy, player.width, player.height);
+    }
     
 }
 
@@ -231,18 +242,20 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 }
 
 function checkImageData(sx,sy) {
-    return ( assets.bgData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 ] != 0 );
+    if ((sx <= 0) || (sx >= 1024) || (sy <= 0) || (sy >= 200))
+	return true;
+    return ( assets.bgData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4] > 0 );
 }
 
 function playerCollidedVertical() {
     try {
 	// (checking only red component)
 	// check feet    
-	if ((player.speedUp < 0) && checkImageData(player.x+player.width/2, player.y+player.height))
+	if ((player.speedUp < 0) && checkImageData(player.x+player.width/2, player.y+player.height ))
 	    return true;
 	
 	// check head   
-	if ((player.speedUp > 0) && checkImageData(player.x+player.width/2, player.y))
+	if ((player.speedUp > 0) && checkImageData(player.x+player.width/2, player.y ))
 	    return true;
 	    
 	    

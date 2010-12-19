@@ -266,11 +266,6 @@ function draw(dt) {
     if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight))
         context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
     
-    if (boundingBoxProcess.done) {
-	context.fillStyle="#880088";
-// 	context.fillRect(10,10,10,10);
-    }
-    
     player.oldx = Math.floor(player.x+player.speedRight*dts + 0.5);
     player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
     

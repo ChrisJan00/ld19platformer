@@ -50,12 +50,19 @@ function loadLevel( levelImage ) {
 		objCtx.drawImage( assets.levelCanvas, 0, canvasHeight * (screenCount + jj + 1), canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight);
 		assets.objects[ii].frames[jj] = objCanvas;
 		assets.objects[ii].colliData[jj] = myGetImageData( objCtx, 0, 0, canvasWidth, canvasHeight);
-		computeBoundingBox(ii,jj);
+		assets.objects[ii].boundingBox[jj] = new ( function() {
+		    this.x = 0;
+		    this.y = 0;
+		    this.w = canvasWidth;
+		    this.h = canvasHeight;
+		} )
 	    }
 	    screenCount += assets.objects[ii].count + 1;
 	}
 	
     }
+    
+    boundingBoxProcess.execute();
     
     // drawing
     var baseContext = assets.baseCanvas.getContext('2d');
@@ -71,69 +78,104 @@ function loadLevel( levelImage ) {
     bgContext.drawImage(assets.baseCanvas,0,0,canvasWidth, canvasHeight);
 }
 
-function computeBoundingBox(objIndex, frameIndex) {
-    // optimization:  Get a bounding box of the object that is animated for each frame
-    // so that we don't have to update the whole screen
-    var frameData = assets.objects[objIndex].colliData[frameIndex];
-    var ii;
-    var minX = canvasWidth+1;
-    for (ii=0;ii<canvasWidth*canvasHeight;ii++) {
-	var x = Math.floor(ii / canvasHeight);
-	var y = Math.floor(ii % canvasHeight);
-	assets.objects[objIndex].scanning = new (function() {
-	    this.ii = ii;
-	    this.x = x;
-	    this.y = y; } );
-	if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-	    minX = x;
-	    break;
+boundingBoxProcess = new (function() {
+    this.done = false;
+    this.ii = 0;
+    this.iiLimit = 100;
+    this.objectIndex = 0;
+    this.frameIndex = 0;
+    this.step = 0;
+    this.nextElement = function() {
+	var b = boundingBoxProcess;
+	b.ii = 0;
+	b.step = 0;
+	b.frameIndex++;
+	if (b.frameIndex >= assets.objects[b.objectIndex].count) {
+	    b.frameIndex = 0;
+	    b.objectIndex++;
+	    if (b.objectIndex >= assets.objects.length)
+		b.done = true;
 	}
     }
-    if (minX == canvasWidth+1) {
-	// empty image
-	assets.objects[objIndex].boundingBox[frameIndex] = new ( function() {
-	    this.x = 0;
-	    this.y = 0;
-	    this.w = 0;
-	    this.h = 0;
-	} )
-	return;
-    }
-    
-    var maxX = 0;
-    for (ii=0;ii<canvasWidth*canvasHeight;ii++) {
-	var x = Math.floor(canvasWidth - ii / canvasHeight - 1);
-	var y = Math.floor(ii % canvasHeight);
-	if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-	    maxX = x;
+    this.computation = function() {
+	// since this is a heavy computation, do it in the background
+	var b = boundingBoxProcess;
+	if (b.done) return;
+	var frameData = assets.objects[b.objectIndex].colliData[b.frameIndex];
+	switch( b.step ) {
+	    case 0:
+		for (var jj=0;jj<b.iiLimit;jj++) {
+		    var x = Math.floor(b.ii / canvasHeight);
+		    var y = Math.floor(b.ii % canvasHeight);
+		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+			assets.objects[b.objectIndex].boundingBox[frameIndex].x = x;
+			b.ii = 0;
+			b.step++;
+			break;
+		    }
+		    b.ii++;
+		    if (b.ii>=canvasWidth*canvasHeight) {
+			// empty
+			assets.objects[b.objectIndex].boundingBox[frameIndex].w = 0;
+			assets.objects[b.objectIndex].boundingBox[frameIndex].h = 0;
+			b.nextElement();
+			break;
+		    }
+		}
+	    break;
+	    case 1:
+		for (var jj=0;jj<b.iiLimit;jj++) {
+		    var x = Math.floor(canvasWidth - b.ii / canvasHeight - 1);
+		    var y = Math.floor(b.ii % canvasHeight);
+		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+			assets.objects[b.objectIndex].boundingBox[frameIndex].w = x - assets.objects[b.objectIndex].boundingBox[frameIndex].x;
+			b.ii = 0;
+			b.step++;
+			break;
+		    }
+		    b.ii++;
+		    if (b.ii>=canvasWidth*canvasHeight)
+			throw new Error("Computation out of bounds");
+		}
+	    break;
+	    case 2:
+		for (var jj=0;jj<b.iiLimit;jj++) {
+		    var x = Math.floor(b.ii % canvasWidth);
+		    var y = Math.floor(b.ii / canvasWidth);
+		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+			assets.objects[b.objectIndex].boundingBox[frameIndex].y = y;
+			b.ii = 0;
+			b.step++;
+			break;
+		    }
+		    b.ii++;
+		    if (b.ii>=canvasWidth*canvasHeight)
+			throw new Error("Computation out of bounds");
+		}
+	    break;
+	    case 3:
+		for (var jj=0;jj<b.iiLimit;jj++) {
+		    var x = Math.floor(b.ii % canvasWidth);
+		    var y = Math.floor(canvasHeight - b.ii / canvasHeight - 1);
+		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+			assets.objects[b.objectIndex].boundingBox[frameIndex].h = y - assets.objects[b.objectIndex].boundingBox[frameIndex].y;
+			b.nextElement();
+			break;
+		    }
+		    b.ii++;
+		    if (b.ii>=canvasWidth*canvasHeight)
+			throw new Error("Computation out of bounds");
+		}
+	    break;
+	    default:  return;
 	    break;
 	}
+	b.execute();
     }
-    var minY = canvasHeight;
-    for (ii=0;ii<canvasWidth*canvasHeight;ii++) {
-	var x = Math.floor(ii % canvasWidth);
-	var y = Math.floor(ii / canvasWidth);
-	if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-	    minY = y;
-	    break;
-	}
+    this.execute = function() {
+	setTimeout( "boundingBoxProcess.computation()", 100 ); 
     }
-    var maxY = 0;
-    for (ii=0;ii<canvasWidth*canvasHeight;ii++) {
-	var x = Math.floor(ii % canvasWidth);
-	var y = Math.floor(canvasHeight - ii / canvasHeight - 1);
-	if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-	    maxY = y;
-	    break;
-	}
-    }
-    assets.objects[objIndex].boundingBox[frameIndex] = new ( function() {
-	    this.x = minX;
-	    this.y = minY;
-	    this.w = maxX - minX;
-	    this.h = maxY - minY;
-	} )
-}
+})
 
 //---------------------------------------
 // GAME LOGIC + GAME GRAPHICS

@@ -2,6 +2,7 @@
 // GLOBAL OBJECTS
 var runningLocallyOnFirefox = (location.href.substr(0,7) == "file://");
 
+
 var canvasWidth;
 var canvasHeight;
 // var canvasWidth = document.getElementById("canvas1").width;
@@ -56,15 +57,14 @@ var keys = new( function() {
 
 var assets = new( function() {
     this.bgVisible = false;
-    this.bgImage = new Image();
-    this.bgImage.src = "bg1_trans.png";
-    this.wallImage = new Image();
-    this.wallImage.src = "bg1_walls.png";
-    this.killImage = new Image();
-    this.killImage.src = "bg1_kill.png";
-    this.bgCanvas = document.createElement('canvas');
     this.walkerImage = new Image();
-    this.walkerImage.src = "walker.png";
+    this.walkerImage.src = "graphics/walker.png";
+    this.level1Image = new Image();
+    this.level1Image.src = "graphics/level1.png";
+    this.bgCanvas = document.createElement('canvas');
+    this.baseCanvas = document.createElement('canvas');
+    this.levelCanvas = document.createElement('canvas');
+    this.updateAnimations = false;
 })
 
 var player = new( function() {
@@ -104,13 +104,9 @@ function stopGame() {
 }
 
 function assetsLoaded() {
-    if (!assets.bgImage.complete)
-	return false;
-    if (!assets.wallImage.complete)
-	return false;
-    if (!assets.killImage.complete)
-	return false;
     if (!assets.walkerImage.complete)
+	return false;
+    if (!assets.level1Image.complete)
 	return false;
     return true;
 }
@@ -122,20 +118,18 @@ function loadGame() {
     
     canvasWidth = document.getElementById("canvas1").width;
     canvasHeight = document.getElementById("canvas1").height;
+    assets.bgCanvas.width = canvasWidth;
+    assets.bgCanvas.height = canvasHeight;
+
+    loadLevel( assets.level1Image );
     
-    assets.bgContext = assets.bgCanvas.getContext('2d');
-    assets.bgCanvas.width = assets.bgImage.width;
-    assets.bgCanvas.height = assets.bgImage.height;
-    assets.bgContext.drawImage(assets.wallImage,0,0);
-    assets.wallData = myGetImageData( assets.bgContext, 0,0,canvasWidth,canvasHeight );
-    assets.bgContext.clearRect(0,0,assets.bgCanvas.width, assets.bgCanvas.height);
-    assets.bgContext.drawImage(assets.killImage,0,0);
-    assets.killData = myGetImageData( assets.bgContext, 0,0, canvasWidth, canvasHeight );
-    assets.bgContext.clearRect(0,0,assets.bgCanvas.width, assets.bgCanvas.height);
-    assets.bgContext.drawImage(assets.bgImage,0,0);
-    assets.bgContext.drawImage(assets.wallImage,0,0);
-    assets.bgContext.drawImage(assets.killImage,0,0);
+    // paint on screen
+    var canvas = document.getElementById("canvas1");
+    var context = canvas.getContext("2d");
     
+    context.drawImage(assets.bgCanvas,0,0);
+    
+    updateAnimations();
 }
 
 function mainLoop() {
@@ -232,6 +226,8 @@ function update(dt) {
 	
     }
     
+    checkActivatedObjects();
+    
     if (playerDeathTouch())
 	resetPlayer();
 	
@@ -243,6 +239,20 @@ function update(dt) {
 	    player.animationTimer = player.animationTimer + player.frameDelay;
 	}
     }
+    
+    for (var ii=0; ii<assets.objects.length; ii++) 
+	if (assets.objects[ii].activated) {
+	    assets.objects[ii].timer -= dt;
+	    while (assets.objects[ii].timer <= 0) {
+		assets.updateAnimations = true;
+		assets.objects[ii].timer += assets.objects[ii].frameDelay;
+		assets.objects[ii].currentFrame++;
+	    }
+	    if (assets.objects[ii].currentFrame >= assets.objects[ii].count) {
+		assets.objects[ii].currentFrame = assets.objects[ii].count-1;
+		assets.objects[ii].activated = false;
+	    }
+	}
 }
 
 function draw(dt) {
@@ -250,10 +260,9 @@ function draw(dt) {
     var canvas = document.getElementById("canvas1");
     var context = canvas.getContext("2d");
     
-    if (!assets.bgVisible) {
-        context.drawImage(assets.bgCanvas,0,0);
-	assets.bgVisible = true;
-    }
+    if (assets.updateAnimations)
+	updateAnimations();
+
     if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight))
         context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
     
@@ -261,8 +270,6 @@ function draw(dt) {
     player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
     
     if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight)) {
-// 	context.fillStyle = "#FFFFFF";
-// 	context.fillRect(player.oldx, player.oldy, player.width, player.height);
 	context.drawImage(assets.walkerImage, player.frame*player.width, 0, player.width, player.height, player.oldx, player.oldy, player.width, player.height);
     }
     
@@ -285,7 +292,16 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 function checkImageData(sx,sy) {
     if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
 	return true;
-    return ( assets.wallData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 + 3] > 0 );
+    var point = ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3;
+    if ( assets.wallData.data[ point ] > 0 )
+	return true;
+    // check the objects
+    for (var ii=0;ii<assets.objects.length; ii++) {
+	var frame = assets.objects[ii].currentFrame;
+	if (assets.objects[ii].colliData[frame].data[point] > 0)
+	    return true;
+    }
+    return false;
 }
 
 function playerCollidedVertical() {
@@ -316,7 +332,7 @@ function playerCollidedHorizontal() {
 function checkKillData(sx,sy) {
     if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
 	return false;
-    return ( assets.killData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 + 3] > 0 );
+    return ( assets.killData.data[ ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
 }
 
 
@@ -338,4 +354,3 @@ function playerDeathTouch() {
     
     return false;
 }
-

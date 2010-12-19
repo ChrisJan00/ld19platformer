@@ -81,7 +81,8 @@ function loadLevel( levelImage ) {
 boundingBoxProcess = new (function() {
     this.done = false;
     this.ii = 0;
-    this.iiLimit = 40;
+    this.iiLimit = 1000;
+    this.breathTime = 10;
     this.objectIndex = 0;
     this.frameIndex = 0;
     this.step = 0;
@@ -93,8 +94,10 @@ boundingBoxProcess = new (function() {
 	if (b.frameIndex >= assets.objects[b.objectIndex].count) {
 	    b.frameIndex = 0;
 	    b.objectIndex++;
-	    if (b.objectIndex >= assets.objects.length)
+	    if (b.objectIndex >= assets.objects.length) {
+		b.stop();
 		b.done = true;
+	    }
 	}
     }
     this.computation = function() {
@@ -108,7 +111,7 @@ boundingBoxProcess = new (function() {
 		    var x = Math.floor(b.ii / canvasHeight);
 		    var y = Math.floor(b.ii % canvasHeight);
 		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-			assets.objects[b.objectIndex].boundingBox[frameIndex].x = x;
+			assets.objects[b.objectIndex].boundingBox[b.frameIndex].x = x;
 			b.ii = 0;
 			b.step++;
 			break;
@@ -116,8 +119,8 @@ boundingBoxProcess = new (function() {
 		    b.ii++;
 		    if (b.ii>=canvasWidth*canvasHeight) {
 			// empty
-			assets.objects[b.objectIndex].boundingBox[frameIndex].w = 0;
-			assets.objects[b.objectIndex].boundingBox[frameIndex].h = 0;
+			assets.objects[b.objectIndex].boundingBox[b.frameIndex].w = 0;
+			assets.objects[b.objectIndex].boundingBox[b.frameIndex].h = 0;
 			b.nextElement();
 			break;
 		    }
@@ -128,7 +131,7 @@ boundingBoxProcess = new (function() {
 		    var x = Math.floor(canvasWidth - b.ii / canvasHeight - 1);
 		    var y = Math.floor(b.ii % canvasHeight);
 		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-			assets.objects[b.objectIndex].boundingBox[frameIndex].w = x - assets.objects[b.objectIndex].boundingBox[frameIndex].x;
+			assets.objects[b.objectIndex].boundingBox[b.frameIndex].w = x - assets.objects[b.objectIndex].boundingBox[b.frameIndex].x;
 			b.ii = 0;
 			b.step++;
 			break;
@@ -143,7 +146,7 @@ boundingBoxProcess = new (function() {
 		    var x = Math.floor(b.ii % canvasWidth);
 		    var y = Math.floor(b.ii / canvasWidth);
 		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-			assets.objects[b.objectIndex].boundingBox[frameIndex].y = y;
+			assets.objects[b.objectIndex].boundingBox[b.frameIndex].y = y;
 			b.ii = 0;
 			b.step++;
 			break;
@@ -158,7 +161,7 @@ boundingBoxProcess = new (function() {
 		    var x = Math.floor(b.ii % canvasWidth);
 		    var y = Math.floor(canvasHeight - b.ii / canvasHeight - 1);
 		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-			assets.objects[b.objectIndex].boundingBox[frameIndex].h = y - assets.objects[b.objectIndex].boundingBox[frameIndex].y;
+			assets.objects[b.objectIndex].boundingBox[b.frameIndex].h = y - assets.objects[b.objectIndex].boundingBox[b.frameIndex].y;
 			b.nextElement();
 			break;
 		    }
@@ -170,10 +173,12 @@ boundingBoxProcess = new (function() {
 	    default:  return;
 	    break;
 	}
-	b.execute();
     }
     this.execute = function() {
-	setTimeout( "boundingBoxProcess.computation()", 100 ); 
+	boundingBoxProcess.runControl = setInterval(boundingBoxProcess.computation, boundingBoxProcess.breathTime);
+    }
+    this.stop = function() {
+	clearInterval(boundingBoxProcess.runControl);
     }
 })
 

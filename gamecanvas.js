@@ -62,6 +62,7 @@ var assets = new( function() {
     this.level1Image = new Image();
     this.level1Image.src = "graphics/level1.png";
     this.bgCanvas = document.createElement('canvas');
+    this.baseCanvas = document.createElement('canvas');
     this.levelCanvas = document.createElement('canvas');
     this.updateAnimations = false;
 })
@@ -126,8 +127,6 @@ function loadGame() {
     assets.levelCanvas.width = assets.levelImage.width;
     assets.levelCanvas.height = assets.levelImage.height;
     levelContext.drawImage(assets.levelImage, 0, 0);
-//     assets.wallData = myGetImageData( levelContext, 0, canvasHeight * 1, canvasWidth, canvasHeight );
-//     assets.killData = myGetImageData( levelContext, 0, canvasHeight * 2, canvasWidth, canvasHeight );
     
     // objects
     assets.objects = new Array();
@@ -143,9 +142,10 @@ function loadGame() {
 		assets.objects.push( new ( function() { 
 		    this.count = 0; 
 		    this.currentFrame = 0;
+		    this.oldFrame = -1;
 		    this.activated = false;
 		    this.timer = 0;
-		    this.frameDelay = 200;
+		    this.frameDelay = 100;
 		} ) )
 	    }
 	    else
@@ -158,6 +158,8 @@ function loadGame() {
 	    assets.objects[ii].activationData = myGetImageData(levelContext, 0, canvasHeight * screenCount, canvasWidth, canvasHeight);
 	    // get animation layers in an object canvas
 	    assets.objects[ii].frames = new Array();
+	    assets.objects[ii].boundingBox = new Array();
+	    assets.objects[ii].colliData = new Array();
 	    for (var jj=0;jj<assets.objects[ii].count;jj++) {
 		var objCanvas = document.createElement('canvas');
 		objCanvas.width = canvasWidth;
@@ -165,13 +167,98 @@ function loadGame() {
 		var objCtx = objCanvas.getContext('2d');
 		objCtx.drawImage( assets.levelCanvas, 0, canvasHeight * (screenCount + jj + 1), canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight);
 		assets.objects[ii].frames[jj] = objCanvas;
+		assets.objects[ii].colliData[jj] = myGetImageData( objCtx, 0, 0, canvasWidth, canvasHeight);
+		computeBoundingBox(ii,jj);
 	    }
 	    screenCount += assets.objects[ii].count + 1;
 	}
 	
     }
+    
+    // drawing
+    var baseContext = assets.baseCanvas.getContext('2d');
+    assets.baseCanvas.width = canvasWidth;
+    assets.baseCanvas.height = canvasHeight;
+    baseContext.drawImage(assets.levelImage,0,canvasHeight * 0, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
+    baseContext.drawImage(assets.levelImage,0,canvasHeight * 1, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
+    baseContext.drawImage(assets.levelImage,0,canvasHeight * 2, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
+    assets.killData = myGetImageData( levelContext, 0, canvasHeight * 2, canvasWidth, canvasHeight );
+    assets.wallData = myGetImageData( levelContext, 0, canvasHeight * 1, canvasWidth, canvasHeight );
+    
+    var bgContext = assets.bgCanvas.getContext('2d');
+    bgContext.drawImage(assets.baseCanvas,0,0,canvasWidth, canvasHeight);
 
+    // paint on screen
+    var canvas = document.getElementById("canvas1");
+    var context = canvas.getContext("2d");
+    
+    context.drawImage(assets.bgCanvas,0,0);
+    
     updateAnimations();
+}
+
+function computeBoundingBox(objIndex, frameIndex) {
+    // optimization:  Get a bounding box of the object that is animated for each frame
+    // so that we don't have to update the whole screen
+    var frameData = assets.objects[objIndex].colliData[frameIndex];
+    var ii;
+    var minX = canvasWidth+1;
+    for (ii=0;ii<canvasWidth*canvasHeight;ii++) {
+	var x = Math.floor(ii / canvasHeight);
+	var y = Math.floor(ii % canvasHeight);
+	assets.objects[objIndex].scanning = new (function() {
+	    this.ii = ii;
+	    this.x = x;
+	    this.y = y; } );
+	if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+	    minX = x;
+	    break;
+	}
+    }
+    if (minX == canvasWidth+1) {
+	// empty image
+	assets.objects[objIndex].boundingBox[frameIndex] = new ( function() {
+	    this.x = 0;
+	    this.y = 0;
+	    this.w = 0;
+	    this.h = 0;
+	} )
+	return;
+    }
+    
+    var maxX = 0;
+    for (ii=0;ii<canvasWidth*canvasHeight;ii++) {
+	var x = Math.floor(canvasWidth - ii / canvasHeight - 1);
+	var y = Math.floor(ii % canvasHeight);
+	if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+	    maxX = x;
+	    break;
+	}
+    }
+    var minY = canvasHeight;
+    for (ii=0;ii<canvasWidth*canvasHeight;ii++) {
+	var x = Math.floor(ii % canvasWidth);
+	var y = Math.floor(ii / canvasWidth);
+	if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+	    minY = y;
+	    break;
+	}
+    }
+    var maxY = 0;
+    for (ii=0;ii<canvasWidth*canvasHeight;ii++) {
+	var x = Math.floor(ii % canvasWidth);
+	var y = Math.floor(canvasHeight - ii / canvasHeight - 1);
+	if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+	    maxY = y;
+	    break;
+	}
+    }
+    assets.objects[objIndex].boundingBox[frameIndex] = new ( function() {
+	    this.x = minX;
+	    this.y = minY;
+	    this.w = maxX - minX;
+	    this.h = maxY - minY;
+	} )
 }
 
 function mainLoop() {
@@ -299,36 +386,33 @@ function update(dt) {
 
 function updateAnimations() {
 
-    // drawing
+    // background
     var bgContext = assets.bgCanvas.getContext('2d');
-    bgContext.clearRect(0,0, canvasWidth, canvasHeight);
-    bgContext.drawImage(assets.levelImage,0,canvasHeight * 0, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
-    bgContext.drawImage(assets.levelImage,0,canvasHeight * 1, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
-    bgContext.drawImage(assets.levelImage,0,canvasHeight * 2, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
-
-    // kill layer
-    var levelContext = assets.levelCanvas.getContext('2d');
-    assets.killData = myGetImageData( levelContext, 0, canvasHeight * 2, canvasWidth, canvasHeight );
+    // foreground
+    var canvas = document.getElementById("canvas1");
+    var fgContext = canvas.getContext("2d");
     
-    // collision
-    var colliCanvas = document.createElement('canvas');
-    colliCanvas.width = canvasWidth;
-    colliCanvas.height = canvasHeight;
-    var colliContext = colliCanvas.getContext('2d');
-    colliContext.drawImage(assets.levelImage,0,canvasHeight * 1, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
     // objects
     for (var ii=0; ii<assets.objects.length; ii++) {
-	var objectCanvas = assets.objects[ii].frames[assets.objects[ii].currentFrame];
-	bgContext.drawImage(objectCanvas, 0, 0, canvasWidth, canvasHeight);
-	colliContext.drawImage(objectCanvas, 0, 0, canvasWidth, canvasHeight);
+	var oldFrame = assets.objects[ii].oldFrame;
+	var frame = assets.objects[ii].currentFrame;
+	if (oldFrame == frame)
+	    continue;
+	if (oldFrame >= 0) {
+	    var box = assets.objects[ii].boundingBox[oldFrame];
+	    if ((box.w > 0) && (box.h > 0)) {
+		bgContext.drawImage(assets.baseCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
+		fgContext.drawImage(assets.baseCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
+	    }
+	}
+	assets.objects[ii].oldFrame = frame;
+	var objectCanvas = assets.objects[ii].frames[frame];
+	var box = assets.objects[ii].boundingBox[frame];
+	if ((box.w > 0) && (box.h > 0)) {
+	    bgContext.drawImage(objectCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
+	    fgContext.drawImage(objectCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
+	}
     }
-    assets.wallData = myGetImageData( colliContext, 0, 0, canvasWidth, canvasHeight);
-    
-    // paint on screen
-    var canvas = document.getElementById("canvas1");
-    var context = canvas.getContext("2d");
-    
-    context.drawImage(assets.bgCanvas,0,0);
 	
     assets.updateAnimations = false;
 }
@@ -340,11 +424,7 @@ function draw(dt) {
     
     if (assets.updateAnimations)
 	updateAnimations();
-	
-    if (!assets.bgVisible) {
-        context.drawImage(assets.bgCanvas,0,0);
-	assets.bgVisible = true;
-    }
+
     if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight))
         context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
     
@@ -374,7 +454,16 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 function checkImageData(sx,sy) {
     if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
 	return true;
-    return ( assets.wallData.data[ ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
+    var point = ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3;
+    if ( assets.wallData.data[ point ] > 0 )
+	return true;
+    // check the objects
+    for (var ii=0;ii<assets.objects.length; ii++) {
+	var frame = assets.objects[ii].currentFrame;
+	if (assets.objects[ii].colliData[frame].data[point] > 0)
+	    return true;
+    }
+    return false;
 }
 
 function playerCollidedVertical() {

@@ -80,6 +80,7 @@ function loadLevel( levelImage ) {
 
 boundingBoxProcess = new (function() {
     this.done = false;
+    this.isComputing = false;
     this.ii = 0;
     this.iiLimit = 1000;
     this.breathTime = 10;
@@ -104,6 +105,11 @@ boundingBoxProcess = new (function() {
 	// since this is a heavy computation, do it in the background
 	var b = boundingBoxProcess;
 	if (b.done) return;
+	
+	// "only one can be executed"
+	if (b.isComputing) return;
+	b.isComputing = true;
+	
 	var frameData = assets.objects[b.objectIndex].colliData[b.frameIndex];
 	switch( b.step ) {
 	    case 0:
@@ -170,9 +176,10 @@ boundingBoxProcess = new (function() {
 			throw new Error("Computation out of bounds");
 		}
 	    break;
-	    default:  return;
+	    default:
 	    break;
 	}
+	b.isComputing = false;
     }
     this.execute = function() {
 	boundingBoxProcess.runControl = setInterval(boundingBoxProcess.computation, boundingBoxProcess.breathTime);

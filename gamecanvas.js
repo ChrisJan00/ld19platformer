@@ -56,15 +56,11 @@ var keys = new( function() {
 
 var assets = new( function() {
     this.bgVisible = false;
-    this.bgImage = new Image();
-    this.bgImage.src = "bg1_trans.png";
-    this.wallImage = new Image();
-    this.wallImage.src = "bg1_walls.png";
-    this.killImage = new Image();
-    this.killImage.src = "bg1_kill.png";
-    this.bgCanvas = document.createElement('canvas');
     this.walkerImage = new Image();
-    this.walkerImage.src = "walker.png";
+    this.walkerImage.src = "graphics/walker.png";
+    this.level1Image = new Image();
+    this.level1Image.src = "graphics/level1.png";
+    this.newCanvas = document.createElement('canvas');
 })
 
 var player = new( function() {
@@ -104,13 +100,9 @@ function stopGame() {
 }
 
 function assetsLoaded() {
-    if (!assets.bgImage.complete)
-	return false;
-    if (!assets.wallImage.complete)
-	return false;
-    if (!assets.killImage.complete)
-	return false;
     if (!assets.walkerImage.complete)
+	return false;
+    if (!assets.level1Image.complete)
 	return false;
     return true;
 }
@@ -123,19 +115,17 @@ function loadGame() {
     canvasWidth = document.getElementById("canvas1").width;
     canvasHeight = document.getElementById("canvas1").height;
     
-    assets.bgContext = assets.bgCanvas.getContext('2d');
-    assets.bgCanvas.width = assets.bgImage.width;
-    assets.bgCanvas.height = assets.bgImage.height;
-    assets.bgContext.drawImage(assets.wallImage,0,0);
-    assets.wallData = myGetImageData( assets.bgContext, 0,0,canvasWidth,canvasHeight );
-    assets.bgContext.clearRect(0,0,assets.bgCanvas.width, assets.bgCanvas.height);
-    assets.bgContext.drawImage(assets.killImage,0,0);
-    assets.killData = myGetImageData( assets.bgContext, 0,0, canvasWidth, canvasHeight );
-    assets.bgContext.clearRect(0,0,assets.bgCanvas.width, assets.bgCanvas.height);
-    assets.bgContext.drawImage(assets.bgImage,0,0);
-    assets.bgContext.drawImage(assets.wallImage,0,0);
-    assets.bgContext.drawImage(assets.killImage,0,0);
-    
+    assets.bgContext2 = assets.newCanvas.getContext('2d');
+    assets.newCanvas.width = assets.level1Image.width;
+    assets.newCanvas.height = assets.level1Image.height;
+    assets.bgContext2.drawImage(assets.level1Image, 0, 0);
+    assets.wallData = myGetImageData( assets.bgContext2, 0, canvasHeight * 1, canvasWidth, canvasHeight );
+    assets.killData = myGetImageData( assets.bgContext2, 0, canvasHeight * 2, canvasWidth, canvasHeight );
+    assets.bgContext2.clearRect(0,0,assets.newCanvas.width, assets.newCanvas.height);
+    assets.newCanvas.height = canvasHeight;
+    assets.bgContext2.drawImage(assets.level1Image,0,canvasHeight * 0, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
+    assets.bgContext2.drawImage(assets.level1Image,0,canvasHeight * 1, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
+    assets.bgContext2.drawImage(assets.level1Image,0,canvasHeight * 2, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
 }
 
 function mainLoop() {
@@ -251,11 +241,11 @@ function draw(dt) {
     var context = canvas.getContext("2d");
     
     if (!assets.bgVisible) {
-        context.drawImage(assets.bgCanvas,0,0);
+        context.drawImage(assets.newCanvas,0,0);
 	assets.bgVisible = true;
     }
     if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight))
-        context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
+        context.drawImage(assets.newCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
     
     player.oldx = Math.floor(player.x+player.speedRight*dts + 0.5);
     player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
@@ -285,7 +275,7 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 function checkImageData(sx,sy) {
     if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
 	return true;
-    return ( assets.wallData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 + 3] > 0 );
+    return ( assets.wallData.data[ ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
 }
 
 function playerCollidedVertical() {
@@ -316,7 +306,7 @@ function playerCollidedHorizontal() {
 function checkKillData(sx,sy) {
     if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
 	return false;
-    return ( assets.killData.data[ ( Math.floor(sy) * assets.bgImage.width + Math.floor(sx) ) * 4 + 3] > 0 );
+    return ( assets.killData.data[ ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
 }
 
 

@@ -81,7 +81,7 @@ function loadLevel( levelImage ) {
 boundingBoxProcess = new (function() {
     this.done = false;
     this.ii = 0;
-    this.iiLimit = 100;
+    this.iiLimit = 40;
     this.objectIndex = 0;
     this.frameIndex = 0;
     this.step = 0;

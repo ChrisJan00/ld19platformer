@@ -133,24 +133,11 @@ boundingBoxProcess = new (function() {
 		}
 	    break;
 	    case 1:
+		var x0 = assets.objects[b.objectIndex].boundingBox[b.frameIndex].x;
+		var ix = canvasWidth - x0;
 		for (var jj=0;jj<b.iiLimit;jj++) {
-		    var x = Math.floor(canvasWidth - b.ii / canvasHeight - 1);
-		    var y = Math.floor(b.ii % canvasHeight);
-		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
-			assets.objects[b.objectIndex].boundingBox[b.frameIndex].w = x - assets.objects[b.objectIndex].boundingBox[b.frameIndex].x;
-			b.ii = 0;
-			b.step++;
-			break;
-		    }
-		    b.ii++;
-		    if (b.ii>=canvasWidth*canvasHeight)
-			throw new Error("Computation out of bounds");
-		}
-	    break;
-	    case 2:
-		for (var jj=0;jj<b.iiLimit;jj++) {
-		    var x = Math.floor(b.ii % canvasWidth);
-		    var y = Math.floor(b.ii / canvasWidth);
+		    var x = Math.floor(b.ii % ix) + x0;
+		    var y = Math.floor(b.ii / ix);
 		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
 			assets.objects[b.objectIndex].boundingBox[b.frameIndex].y = y;
 			b.ii = 0;
@@ -158,14 +145,33 @@ boundingBoxProcess = new (function() {
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=canvasWidth*canvasHeight)
+		    if (b.ii>=ix*canvasHeight)
+			throw new Error("Computation out of bounds");
+		}
+	    break;	    
+	    case 2:
+		var y0 = assets.objects[b.objectIndex].boundingBox[b.frameIndex].y;
+		var iy = canvasHeight - y0;
+		for (var jj=0;jj<b.iiLimit;jj++) {
+		    var x = Math.floor(canvasWidth - b.ii / iy - 1);
+		    var y = Math.floor(b.ii % iy) + y0;
+		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+			assets.objects[b.objectIndex].boundingBox[b.frameIndex].w = x - assets.objects[b.objectIndex].boundingBox[b.frameIndex].x;
+			b.ii = 0;
+			b.step++;
+			break;
+		    }
+		    b.ii++;
+		    if (b.ii>=canvasWidth*iy)
 			throw new Error("Computation out of bounds");
 		}
 	    break;
 	    case 3:
+		var x0 = assets.objects[b.objectIndex].boundingBox[b.frameIndex].x;
+		var ix = assets.objects[b.objectIndex].boundingBox[b.frameIndex].w;
 		for (var jj=0;jj<b.iiLimit;jj++) {
-		    var x = Math.floor(b.ii % canvasWidth);
-		    var y = Math.floor(canvasHeight - b.ii / canvasHeight - 1);
+		    var x = Math.floor(b.ii % ix) + x0;
+		    var y = Math.floor(canvasHeight - b.ii / ix - 1);
 		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
 			assets.objects[b.objectIndex].boundingBox[b.frameIndex].h = y - assets.objects[b.objectIndex].boundingBox[b.frameIndex].y;
 			b.nextElement();

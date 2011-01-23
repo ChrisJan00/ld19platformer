@@ -56,7 +56,7 @@ var graphics = new( function() {
 	    if (oldFrame == frame)
 		continue;
 	    if (oldFrame >= 0) {
-		var box = assets.boxes[ii].boundingBox[oldFrame];
+		var box = assets.objects[ii].boundingBox[oldFrame];
 		if ((box.w > 0) && (box.h > 0)) {
 		    bgContext.drawImage(assets.baseCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
 		    fgContext.drawImage(assets.baseCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
@@ -64,7 +64,7 @@ var graphics = new( function() {
 	    }
 	    assets.objects[ii].oldFrame = frame;
 	    var objectCanvas = assets.objects[ii].frames[frame];
-	    var box = assets.boxes[ii].boundingBox[frame];
+	    var box = assets.objects[ii].boundingBox[frame];
 	    if ((box.w > 0) && (box.h > 0)) {
 		bgContext.drawImage(objectCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
 		fgContext.drawImage(objectCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);

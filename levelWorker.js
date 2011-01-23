@@ -1,15 +1,16 @@
 // worker
 
-// so, the idea is that I receive a postmessage with the whole Level structure, which is not completed
-// then I start computing, periodically responding with an update function that returns the whole (updated) structure
-// the reply should not include the images, only the computed data
-
 // the caller checks if webworkers are available, using them if they are, or the alternative "pseudothread" structure if not.
 
 function checkWorkersAvailable() 
 {
-    return false;
-    return !!window.Worker;
+    // the DOM is not available from within the worker, if I have no access then I'll assume I am the worker
+    try {
+	// if the DOM is available, check if it supports workers
+        return !!window.Worker;
+    } catch(e) {
+	return true;
+    }
 }
 
 if (checkWorkersAvailable()) {
@@ -25,23 +26,7 @@ boundingBoxProcess = new (function() {
     this.ii = 0;
     this.iiLimit = 1000;
     this.breathTime = 10;
-    this.objectIndex = 0;
-    this.frameIndex = 0;
     this.step = 0;
-    this.nextElement = function() {
-	var b = boundingBoxProcess;
-	b.ii = 0;
-	b.step = 0;
-	b.frameIndex++;
-	if (b.frameIndex >= b.inputData[b.objectIndex].count) {
-	    b.frameIndex = 0;
-	    b.objectIndex++;
-	    if (b.objectIndex >= b.inputData.length) {
-		b.stop();
-		b.done = true;
-	    }
-	}
-    }
     this.computation = function() {
 	// since this is a heavy computation, do it in the background
 	var b = boundingBoxProcess;
@@ -51,87 +36,74 @@ boundingBoxProcess = new (function() {
 	if (b.isComputing) return;
 	b.isComputing = true;
 	
-// 	b.processedData = b.inputData;
-	
-// 	var gW = graphics.canvasWidth;
-// 	var gH = graphics.canvasHeight;
-	var gW = b.inputData[b.objectIndex].frames[0].width;
-	var gH = b.inputData[b.objectIndex].frames[0].height;
-	
-	var frameData = b.inputData[b.objectIndex].colliData[b.frameIndex].data;
 	switch( b.step ) {
 	    case 0:
 		for (var jj=0;jj<b.iiLimit;jj++) {
-		    var x = Math.floor(b.ii / gH);
-		    var y = Math.floor(b.ii % gH);
-		    if (frameData[(y*gW + x) * 4 + 3] > 0) {
-			b.processedData[b.objectIndex].boundingBox[b.frameIndex].x = x;
+		    var x = Math.floor(b.ii / b.gH);
+		    var y = Math.floor(b.ii % b.gH);
+		    if (b.frameData[(y*b.gW + x) * 4 + 3] > 0) {
+			b.box.x = x;
 			b.ii = 0;
 			b.step++;
-			b.sendUpdate();
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=gW*gH) {
+		    if (b.ii>=b.gW*b.gH) {
 			// empty
-			b.processedData[b.objectIndex].boundingBox[b.frameIndex].w = 0;
-			b.processedData[b.objectIndex].boundingBox[b.frameIndex].h = 0;
-			b.nextElement();
+			b.box.w = 0;
+			b.box.h = 0;
 			b.sendUpdate();
 			break;
 		    }
 		}
 	    break;
 	    case 1:
-		var x0 = b.processedData[b.objectIndex].boundingBox[b.frameIndex].x;
-		var ix = gW - x0;
+		var x0 = b.box.x;
+		var ix = b.gW - x0;
 		for (var jj=0;jj<b.iiLimit;jj++) {
 		    var x = Math.floor(b.ii % ix) + x0;
 		    var y = Math.floor(b.ii / ix);
-		    if (frameData[(y*gW + x) * 4 + 3] > 0) {
-			b.processedData[b.objectIndex].boundingBox[b.frameIndex].y = y;
+		    if (b.frameData[(y*b.gW + x) * 4 + 3] > 0) {
+			b.box.y = y;
 			b.ii = 0;
 			b.step++;
-			b.sendUpdate();
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=ix*gH)
+		    if (b.ii>=ix*b.gH)
 			throw new Error("Computation out of bounds");
 		}
 	    break;	    
 	    case 2:
-		var y0 = b.processedData[b.objectIndex].boundingBox[b.frameIndex].y;
-		var iy = gH - y0;
+		var y0 = b.box.y;
+		var iy = b.gH - y0;
 		for (var jj=0;jj<b.iiLimit;jj++) {
-		    var x = Math.floor(gW - b.ii / iy - 1);
+		    var x = Math.floor(b.gW - b.ii / iy - 1);
 		    var y = Math.floor(b.ii % iy) + y0;
-		    if (frameData[(y*gW + x) * 4 + 3] > 0) {
-			b.processedData[b.objectIndex].boundingBox[b.frameIndex].w = x - b.processedData[b.objectIndex].boundingBox[b.frameIndex].x;
+		    if (b.frameData[(y*b.gW + x) * 4 + 3] > 0) {
+			b.box.w = x - b.box.x;
 			b.ii = 0;
 			b.step++;
-			b.sendUpdate();
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=gW*iy)
+		    if (b.ii>=b.gW*iy)
 			throw new Error("Computation out of bounds");
 		}
 	    break;
 	    case 3:
-		var x0 = b.processedData[b.objectIndex].boundingBox[b.frameIndex].x;
-		var ix = b.processedData[b.objectIndex].boundingBox[b.frameIndex].w;
+		var x0 = b.box.x;
+		var ix = b.box.w;
 		for (var jj=0;jj<b.iiLimit;jj++) {
 		    var x = Math.floor(b.ii % ix) + x0;
-		    var y = Math.floor(gH - b.ii / ix - 1);
-		    if (frameData[(y*gW + x) * 4 + 3] > 0) {
-			b.processedData[b.objectIndex].boundingBox[b.frameIndex].h = y - b.processedData[b.objectIndex].boundingBox[b.frameIndex].y;
-			b.nextElement();
+		    var y = Math.floor(b.gH - b.ii / ix - 1);
+		    if (b.frameData[(y*b.gW + x) * 4 + 3] > 0) {
+			b.box.h = y - b.box.y;
 			b.sendUpdate();
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=gW*gH)
+		    if (b.ii>=b.gW*b.gH)
 			throw new Error("Computation out of bounds");
 		}
 	    break;
@@ -142,16 +114,23 @@ boundingBoxProcess = new (function() {
     }
     
     this.start = function(exchangeData) {
-	boundingBoxProcess.inputData = exchangeData.input;
-	boundingBoxProcess.processedData = exchangeData.output;
+	boundingBoxProcess.frameData = exchangeData.frameData;
+	boundingBoxProcess.box = exchangeData.box;
+	boundingBoxProcess.gW = exchangeData.box.w;
+	boundingBoxProcess.gH = exchangeData.box.h;
 	boundingBoxProcess.callBack = exchangeData.callback;
  	boundingBoxProcess.execute();
     }
-//     this.setCallback = function( callBack ) {
-// 	boundingBoxProcess.callBack = callBack;
-//     }
+    
+    this.prepare = function() {
+	boundingBoxProcess.ii = 0;
+	boundingBoxProcess.step = 0;
+	boundingBoxProcess.done = false;
+        boundingBoxProcess.isComputing = false;
+    }
     
     this.execute = function() {
+	boundingBoxProcess.prepare();
 	if (!checkWorkersAvailable())
 	    boundingBoxProcess.runControl = setInterval(boundingBoxProcess.computation, boundingBoxProcess.breathTime);
 	else {
@@ -160,13 +139,15 @@ boundingBoxProcess = new (function() {
 	}
     }
     this.stop = function() {
+	boundingBoxProcess.done = true;
 	if (!checkWorkersAvailable())
 	    clearInterval(boundingBoxProcess.runControl);
     }
     this.sendUpdate = function() {
+	boundingBoxProcess.stop();
 	if (!checkWorkersAvailable())
-	    boundingBoxProcess.callBack( boundingBoxProcess.processedData );
+	    boundingBoxProcess.callBack( boundingBoxProcess.box );
 	else
-	    self.postMessage( boundingBoxProcess.processedData );
+	    self.postMessage( boundingBoxProcess.box );
     }
 })

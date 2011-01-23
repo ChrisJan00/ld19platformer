@@ -1,5 +1,11 @@
 // cleanup..
 
+// ok, so, the webworker should not manage the whole bulk of data
+// next step is to transform the worker into a "thin" thread that processes one frame at a time
+// with a "simple" protocol:  we will pass one frame at a time with an initial box
+// the thread responds with an improved box, then we will pass the next box
+// the caller keeps track of indices and slotting the information in the proper place
+
 // one object "gamecontrol"/"gameloop"
 // one object "graphics"
 // one object "world"

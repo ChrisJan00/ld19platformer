@@ -13,7 +13,6 @@ function loadLevel( levelImage ) {
     
     // objects
     assets.objects = new Array();
-    assets.boxes = new Array();
     if (assets.levelImage.height > gH * 3) {
 	// count objects and their length
 	var objectData = myGetImageData( levelContext, gW-1, gH * 4-1, 1, assets.levelCanvas.height - gH * 4 + 1); 
@@ -31,9 +30,6 @@ function loadLevel( levelImage ) {
 		    this.timer = 0;
 		    this.frameDelay = 100;
 		} ) );
-		assets.boxes.push( new ( function () {
-		    this.boundingBox = new Array();
-		} ) );
 	    }
 	    else
 	    if (objectCount > 0)
@@ -45,7 +41,7 @@ function loadLevel( levelImage ) {
 	    assets.objects[ii].activationData = myGetImageData(levelContext, 0, gH * screenCount, gW, gH);
 	    // get animation layers in an object canvas
 	    assets.objects[ii].frames = new Array();
-// 	    assets.boxes[ii].boundingBox = new Array();
+	    assets.objects[ii].boundingBox = new Array();
 	    assets.objects[ii].colliData = new Array();
 	    for (var jj=0;jj<assets.objects[ii].count;jj++) {
 		var objCanvas = document.createElement('canvas');
@@ -55,7 +51,7 @@ function loadLevel( levelImage ) {
 		objCtx.drawImage( assets.levelCanvas, 0, gH * (screenCount + jj + 1), gW, gH, 0, 0, gW, gH);
 		assets.objects[ii].frames[jj] = objCanvas;
 		assets.objects[ii].colliData[jj] = myGetImageData( objCtx, 0, 0, gW, gH);
-		assets.boxes[ii].boundingBox[jj] = new ( function() {
+		assets.objects[ii].boundingBox[jj] = new ( function() {
 		    this.x = 0;
 		    this.y = 0;
 		    this.w = gW;
@@ -67,7 +63,7 @@ function loadLevel( levelImage ) {
 	
     }
     
-    startBoundingBoxProcess();
+    boundingBoxControl.launchNext();
         
     // drawing
     var baseContext = assets.baseCanvas.getContext('2d');
@@ -83,24 +79,42 @@ function loadLevel( levelImage ) {
     bgContext.drawImage(assets.baseCanvas,0,0,gW, gH);
 }
 
-function startBoundingBoxProcess() 
-{
-    var processData = new (function() {
-	    this.input = assets.objects;
-	    this.output = assets.boxes;
-	    this.callback = function(newData) { assets.boxes = newData; } 
-	});
-	    
-    if (checkWorkersAvailable()) {
-	var boundingBoxWorker = new Worker('levelWorker.js');
-	boundingBoxWorker.onmessage = function(event) {
-	    processData.callback( event.data );
-	};
-	boundingBoxWorker.postMessage(processData);
-    } else {
-	boundingBoxProcess.start(processData);
+// ------------ thread/worker ---------------
+var boundingBoxControl = new( function() {
+    this.objectIndex = 0;
+    this.frameIndex = 0;
+    this.nextFrame = function() {
+	var b = boundingBoxControl;
+	b.frameIndex++;
+	if (b.frameIndex >= assets.objects[b.objectIndex].count) {
+	    b.frameIndex = 0;
+	    b.objectIndex++;
+	    }
+	if (b.objectIndex < assets.objects.length) {
+	    b.launchNext();
+	}
     }
-}
+    this.launchNext = function() {
+	var threadData = new(function() {
+	    var b = boundingBoxControl;
+	    this.frameData = assets.objects[b.objectIndex].colliData[b.frameIndex].data;
+	    this.box = assets.objects[b.objectIndex].boundingBox[b.frameIndex];
+	    this.callback = function(data) {
+		assets.objects[boundingBoxControl.objectIndex].boundingBox[b.frameIndex] = data;
+		boundingBoxControl.nextFrame();
+	    }
+	});
+	if (checkWorkersAvailable()) {
+	    var boundingBoxWorker = new Worker('levelWorker.js');
+	    boundingBoxWorker.onmessage = function(event) {
+		threadData.callback( event.data );
+	    };
+	    boundingBoxWorker.postMessage(threadData);
+	} else {
+	    boundingBoxProcess.start(threadData);
+	}
+    }
+})
 
 //---------------------------------------
 // GAME LOGIC + GAME GRAPHICS

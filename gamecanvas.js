@@ -10,7 +10,6 @@ var assets = new( function() {
     this.bgCanvas = document.createElement('canvas');
     this.baseCanvas = document.createElement('canvas');
     this.levelCanvas = document.createElement('canvas');
-    this.updateAnimations = false;
 })
 
 var player = new( function() {
@@ -23,8 +22,6 @@ var player = new( function() {
     this.speedUp = 0;
     this.speedRight = 0;
     this.standing = false;
-    this.oldx = this.x;
-    this.oldy = this.y;
     this.rejecting = false;
     this.jumpStrength = 160;
     this.horzSpeed = 100;
@@ -50,9 +47,9 @@ function prepareGame() {
     loadLevel( assets.level1Image );
     
     // paint on screen
-    graphics.currentContext.drawImage(assets.bgCanvas,0,0);
+    graphics.paintBackground();
     
-    updateAnimations();
+    graphics.updateAnimations();
 }
 
 //---------------------------------------
@@ -144,7 +141,7 @@ function update(dt) {
 	if (assets.objects[ii].activated) {
 	    assets.objects[ii].timer -= dt;
 	    while (assets.objects[ii].timer <= 0) {
-		assets.updateAnimations = true;
+		graphics.setUpdateAnimations();
 		assets.objects[ii].timer += assets.objects[ii].frameDelay;
 		assets.objects[ii].currentFrame++;
 	    }

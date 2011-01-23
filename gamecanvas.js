@@ -43,18 +43,14 @@ function loaderProgress() {
 }
 
 function prepareGame() {
-    canvasWidth = document.getElementById("canvas1").width;
-    canvasHeight = document.getElementById("canvas1").height;
-    assets.bgCanvas.width = canvasWidth;
-    assets.bgCanvas.height = canvasHeight;
+    graphics.init();
+    assets.bgCanvas.width = graphics.canvasWidth;
+    assets.bgCanvas.height = graphics.canvasHeight;
 
     loadLevel( assets.level1Image );
     
     // paint on screen
-    var canvas = document.getElementById("canvas1");
-    var context = canvas.getContext("2d");
-    
-    context.drawImage(assets.bgCanvas,0,0);
+    graphics.currentContext.drawImage(assets.bgCanvas,0,0);
     
     updateAnimations();
 }
@@ -159,26 +155,6 @@ function update(dt) {
 	}
 }
 
-function draw(dt) {
-    var dts = dt/1000;
-    var canvas = document.getElementById("canvas1");
-    var context = canvas.getContext("2d");
-    
-    if (assets.updateAnimations)
-	updateAnimations();
-
-    if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight))
-        context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
-    
-    player.oldx = Math.floor(player.x+player.speedRight*dts + 0.5);
-    player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
-    
-    if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight)) {
-	context.drawImage(assets.walkerImage, player.frame*player.width, 0, player.width, player.height, player.oldx, player.oldy, player.width, player.height);
-    }
-    
-}
-
 function myGetImageData(ctx, sx, sy, sw, sh) {
     try {
 	return ctx.getImageData(sx, sy, sw, sh);
@@ -194,9 +170,9 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 }
 
 function checkImageData(sx,sy) {
-    if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
+    if ((sx <= 0) || (sx >= graphics.canvasWidth) || (sy <= 0) || (sy >= graphics.canvasHeight))
 	return true;
-    var point = ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3;
+    var point = ( Math.floor(sy) * graphics.canvasWidth + Math.floor(sx) ) * 4 + 3;
     if ( assets.wallData.data[ point ] > 0 )
 	return true;
     // check the objects
@@ -234,9 +210,9 @@ function playerCollidedHorizontal() {
 }
 
 function checkKillData(sx,sy) {
-    if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
+    if ((sx <= 0) || (sx >= graphics.canvasWidth) || (sy <= 0) || (sy >= graphics.canvasHeight))
 	return false;
-    return ( assets.killData.data[ ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
+    return ( assets.killData.data[ ( Math.floor(sy) * graphics.canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
 }
 
 

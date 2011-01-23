@@ -1,8 +1,9 @@
 // ---------------------------------------------------------
 // GLOBAL OBJECTS
 
-function loadLevel( levelImage ) {    
-    
+function loadLevel( levelImage ) { 
+    var gW = graphics.canvasWidth;   
+    var gH = graphics.canvasHeight;
     assets.levelImage = levelImage;
     
     var levelContext = assets.levelCanvas.getContext('2d');
@@ -12,13 +13,13 @@ function loadLevel( levelImage ) {
     
     // objects
     assets.objects = new Array();
-    if (assets.levelImage.height > canvasHeight * 3) {
+    if (assets.levelImage.height > gH * 3) {
 	// count objects and their length
-	var objectData = myGetImageData( levelContext, canvasWidth-1, canvasHeight * 4-1, 1, assets.levelCanvas.height - canvasHeight * 4 + 1); 
+	var objectData = myGetImageData( levelContext, gW-1, gH * 4-1, 1, assets.levelCanvas.height - gH * 4 + 1); 
 	var objectCount = 0;
 	var ii;
 	
-	for (ii=0; ii < objectData.height; ii += canvasHeight) {
+	for (ii=0; ii < objectData.height; ii += gH) {
 	    if (objectData.data[ii*4+3] > 0) {
 		objectCount++;
 		assets.objects.push( new ( function() { 
@@ -37,24 +38,24 @@ function loadLevel( levelImage ) {
 		
 	var screenCount = 3;
 	for (ii=0; ii<objectCount; ii++) {
-	    assets.objects[ii].activationData = myGetImageData(levelContext, 0, canvasHeight * screenCount, canvasWidth, canvasHeight);
+	    assets.objects[ii].activationData = myGetImageData(levelContext, 0, gH * screenCount, gW, gH);
 	    // get animation layers in an object canvas
 	    assets.objects[ii].frames = new Array();
 	    assets.objects[ii].boundingBox = new Array();
 	    assets.objects[ii].colliData = new Array();
 	    for (var jj=0;jj<assets.objects[ii].count;jj++) {
 		var objCanvas = document.createElement('canvas');
-		objCanvas.width = canvasWidth;
-		objCanvas.height = canvasHeight;
+		objCanvas.width = gW;
+		objCanvas.height = gH;
 		var objCtx = objCanvas.getContext('2d');
-		objCtx.drawImage( assets.levelCanvas, 0, canvasHeight * (screenCount + jj + 1), canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight);
+		objCtx.drawImage( assets.levelCanvas, 0, gH * (screenCount + jj + 1), gW, gH, 0, 0, gW, gH);
 		assets.objects[ii].frames[jj] = objCanvas;
-		assets.objects[ii].colliData[jj] = myGetImageData( objCtx, 0, 0, canvasWidth, canvasHeight);
+		assets.objects[ii].colliData[jj] = myGetImageData( objCtx, 0, 0, gW, gH);
 		assets.objects[ii].boundingBox[jj] = new ( function() {
 		    this.x = 0;
 		    this.y = 0;
-		    this.w = canvasWidth;
-		    this.h = canvasHeight;
+		    this.w = gW;
+		    this.h = gH;
 		} )
 	    }
 	    screenCount += assets.objects[ii].count + 1;
@@ -66,16 +67,16 @@ function loadLevel( levelImage ) {
     
     // drawing
     var baseContext = assets.baseCanvas.getContext('2d');
-    assets.baseCanvas.width = canvasWidth;
-    assets.baseCanvas.height = canvasHeight;
-    baseContext.drawImage(assets.levelImage,0,canvasHeight * 0, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
-    baseContext.drawImage(assets.levelImage,0,canvasHeight * 1, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
-    baseContext.drawImage(assets.levelImage,0,canvasHeight * 2, canvasWidth, canvasHeight, 0,0, canvasWidth, canvasHeight);
-    assets.killData = myGetImageData( levelContext, 0, canvasHeight * 2, canvasWidth, canvasHeight );
-    assets.wallData = myGetImageData( levelContext, 0, canvasHeight * 1, canvasWidth, canvasHeight );
+    assets.baseCanvas.width = gW;
+    assets.baseCanvas.height = gH;
+    baseContext.drawImage(assets.levelImage,0,gH * 0, gW, gH, 0,0, gW, gH);
+    baseContext.drawImage(assets.levelImage,0,gH * 1, gW, gH, 0,0, gW, gH);
+    baseContext.drawImage(assets.levelImage,0,gH * 2, gW, gH, 0,0, gW, gH);
+    assets.killData = myGetImageData( levelContext, 0, gH * 2, gW, gH );
+    assets.wallData = myGetImageData( levelContext, 0, gH * 1, gW, gH );
     
     var bgContext = assets.bgCanvas.getContext('2d');
-    bgContext.drawImage(assets.baseCanvas,0,0,canvasWidth, canvasHeight);
+    bgContext.drawImage(assets.baseCanvas,0,0,gW, gH);
 }
 
 boundingBoxProcess = new (function() {
@@ -110,20 +111,23 @@ boundingBoxProcess = new (function() {
 	if (b.isComputing) return;
 	b.isComputing = true;
 	
+	var gW = graphics.canvasWidth;
+	var gH = graphics.canvasHeight;
+	
 	var frameData = assets.objects[b.objectIndex].colliData[b.frameIndex];
 	switch( b.step ) {
 	    case 0:
 		for (var jj=0;jj<b.iiLimit;jj++) {
-		    var x = Math.floor(b.ii / canvasHeight);
-		    var y = Math.floor(b.ii % canvasHeight);
-		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+		    var x = Math.floor(b.ii / gH);
+		    var y = Math.floor(b.ii % gH);
+		    if (frameData.data[(y*gW + x) * 4 + 3] > 0) {
 			assets.objects[b.objectIndex].boundingBox[b.frameIndex].x = x;
 			b.ii = 0;
 			b.step++;
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=canvasWidth*canvasHeight) {
+		    if (b.ii>=gW*gH) {
 			// empty
 			assets.objects[b.objectIndex].boundingBox[b.frameIndex].w = 0;
 			assets.objects[b.objectIndex].boundingBox[b.frameIndex].h = 0;
@@ -134,35 +138,35 @@ boundingBoxProcess = new (function() {
 	    break;
 	    case 1:
 		var x0 = assets.objects[b.objectIndex].boundingBox[b.frameIndex].x;
-		var ix = canvasWidth - x0;
+		var ix = gW - x0;
 		for (var jj=0;jj<b.iiLimit;jj++) {
 		    var x = Math.floor(b.ii % ix) + x0;
 		    var y = Math.floor(b.ii / ix);
-		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+		    if (frameData.data[(y*gW + x) * 4 + 3] > 0) {
 			assets.objects[b.objectIndex].boundingBox[b.frameIndex].y = y;
 			b.ii = 0;
 			b.step++;
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=ix*canvasHeight)
+		    if (b.ii>=ix*gH)
 			throw new Error("Computation out of bounds");
 		}
 	    break;	    
 	    case 2:
 		var y0 = assets.objects[b.objectIndex].boundingBox[b.frameIndex].y;
-		var iy = canvasHeight - y0;
+		var iy = gH - y0;
 		for (var jj=0;jj<b.iiLimit;jj++) {
-		    var x = Math.floor(canvasWidth - b.ii / iy - 1);
+		    var x = Math.floor(gW - b.ii / iy - 1);
 		    var y = Math.floor(b.ii % iy) + y0;
-		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+		    if (frameData.data[(y*gW + x) * 4 + 3] > 0) {
 			assets.objects[b.objectIndex].boundingBox[b.frameIndex].w = x - assets.objects[b.objectIndex].boundingBox[b.frameIndex].x;
 			b.ii = 0;
 			b.step++;
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=canvasWidth*iy)
+		    if (b.ii>=gW*iy)
 			throw new Error("Computation out of bounds");
 		}
 	    break;
@@ -171,14 +175,14 @@ boundingBoxProcess = new (function() {
 		var ix = assets.objects[b.objectIndex].boundingBox[b.frameIndex].w;
 		for (var jj=0;jj<b.iiLimit;jj++) {
 		    var x = Math.floor(b.ii % ix) + x0;
-		    var y = Math.floor(canvasHeight - b.ii / ix - 1);
-		    if (frameData.data[(y*canvasWidth + x) * 4 + 3] > 0) {
+		    var y = Math.floor(gH - b.ii / ix - 1);
+		    if (frameData.data[(y*gW + x) * 4 + 3] > 0) {
 			assets.objects[b.objectIndex].boundingBox[b.frameIndex].h = y - assets.objects[b.objectIndex].boundingBox[b.frameIndex].y;
 			b.nextElement();
 			break;
 		    }
 		    b.ii++;
-		    if (b.ii>=canvasWidth*canvasHeight)
+		    if (b.ii>=gW*gH)
 			throw new Error("Computation out of bounds");
 		}
 	    break;
@@ -197,39 +201,6 @@ boundingBoxProcess = new (function() {
 
 //---------------------------------------
 // GAME LOGIC + GAME GRAPHICS
-
-function updateAnimations() {
-
-    // background
-    var bgContext = assets.bgCanvas.getContext('2d');
-    // foreground
-    var canvas = document.getElementById("canvas1");
-    var fgContext = canvas.getContext("2d");
-    
-    // objects
-    for (var ii=0; ii<assets.objects.length; ii++) {
-	var oldFrame = assets.objects[ii].oldFrame;
-	var frame = assets.objects[ii].currentFrame;
-	if (oldFrame == frame)
-	    continue;
-	if (oldFrame >= 0) {
-	    var box = assets.objects[ii].boundingBox[oldFrame];
-	    if ((box.w > 0) && (box.h > 0)) {
-		bgContext.drawImage(assets.baseCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
-		fgContext.drawImage(assets.baseCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
-	    }
-	}
-	assets.objects[ii].oldFrame = frame;
-	var objectCanvas = assets.objects[ii].frames[frame];
-	var box = assets.objects[ii].boundingBox[frame];
-	if ((box.w > 0) && (box.h > 0)) {
-	    bgContext.drawImage(objectCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
-	    fgContext.drawImage(objectCanvas, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
-	}
-    }
-	
-    assets.updateAnimations = false;
-}
 
 function checkActivatedObjects()
 {
@@ -264,8 +235,10 @@ function playerTouchedObject(index) {
 }
 
 function checkObjectData(index, sx, sy) {
-    if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
+    var gW = graphics.canvasWidth;
+    var gH = graphics.canvasHeight;
+    if ((sx <= 0) || (sx >= gW) || (sy <= 0) || (sy >= gH))
 	return false;
-    return ( assets.objects[index].activationData.data[ ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
+    return ( assets.objects[index].activationData.data[ ( Math.floor(sy) * gW + Math.floor(sx) ) * 4 + 3] > 0 );
 }
 

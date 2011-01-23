@@ -1,3 +1,12 @@
+// note: yes! in javascript you can substitute functions by redeclaring them!
+// cleanup..
+
+// one object "gamecontrol"/"gameloop"
+// one object "graphics"
+// one object "world"
+// one object "player"
+// one object "Loader" + "loaderWorker"
+
 
 // methods:
 // hand-made thread

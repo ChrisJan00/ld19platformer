@@ -1,4 +1,3 @@
-// note: yes! in javascript you can substitute functions by redeclaring them!
 // cleanup..
 
 // one object "gamecontrol"/"gameloop"

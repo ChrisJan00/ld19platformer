@@ -2,7 +2,6 @@
 // GLOBAL OBJECTS
 
 var assets = new( function() {
-    this.bgVisible = false;
     this.walkerImage = new Image();
     this.walkerImage.src = "graphics/walker.png";
     this.level1Image = new Image();

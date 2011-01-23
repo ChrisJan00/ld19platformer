@@ -1,21 +1,6 @@
 // ---------------------------------------------------------
 // GLOBAL OBJECTS
 
-
-// var canvasWidth = document.getElementById("canvas1").width;
-// var canvasHeight = document.getElementById("canvas1").height;
-
-// timer engine
-var gameControl = new( function() {
-    this.fps = 60;
-    this.startTime = new Date().getTime();
-    this.stopTime = this.startTime;
-    this.elapsed = 0;
-    this.dt = 0;
-    this.step = 10;
-    this.skip = false;
-} )
-
 var assets = new( function() {
     this.bgVisible = false;
     this.walkerImage = new Image();
@@ -49,30 +34,15 @@ var player = new( function() {
     this.frameDelay = 1000/18;
 })
 
-// ------------------------------------------------------------------------
-// CONTROL FUNCTIONS
-function startGame() {
-    if (!assetsLoaded())
-	setTimeout(startGame(),500); // wait 500ms
-    else {
-	loadGame();
-	gameControl.runInterval = setInterval(mainLoop, 1000/gameControl.fps);
-    }
-}
-
-function stopGame() {
-    clearInterval( gameControl.runInterval );
-}
-
-function assetsLoaded() {
+function loaderProgress() {
     if (!assets.walkerImage.complete)
-	return false;
+	return 0;
     if (!assets.level1Image.complete)
-	return false;
-    return true;
+	return 50;
+    return 100;
 }
 
-function loadGame() {
+function prepareGame() {
     canvasWidth = document.getElementById("canvas1").width;
     canvasHeight = document.getElementById("canvas1").height;
     assets.bgCanvas.width = canvasWidth;
@@ -87,29 +57,6 @@ function loadGame() {
     context.drawImage(assets.bgCanvas,0,0);
     
     updateAnimations();
-}
-
-function mainLoop() {
-    if (gameControl.skip)
-	return;
-    else
-	gameControl.skip = true
-
-    // control the time
-    gameControl.stopTime = new Date().getTime();
-    gameControl.elapsed = gameControl.stopTime - gameControl.startTime;
-    gameControl.startTime = gameControl.stopTime;
-    gameControl.dt = gameControl.dt + gameControl.elapsed;
-	
-    while(gameControl.dt > gameControl.step) {
-	update( gameControl.step );
-	gameControl.dt = gameControl.dt - gameControl.step;
-    }
-    
-    // dt is passed for interpolation
-    draw(gameControl.dt);
-	
-    gameControl.skip = false
 }
 
 //---------------------------------------

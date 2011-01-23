@@ -1,0 +1,56 @@
+
+// methods:
+// hand-made thread
+// webworkers
+// client-side data
+// file in server
+
+
+// the file in the server is called gamedata.txt
+// format:
+// # filename
+// box1
+// box2
+// etc...
+
+Algo:
+ - check if screen_1_1.png exists, if not, we can't play
+ - check if gamedata.txt exists
+   - if it does, compare date of gamedata.txt with data of screen_1_1.png
+      - if data is older, ignore it and skip to next part
+      - else, read the boxes from gamedata.txt (store them locally) and return
+ - check if there is local data
+   - check data's date
+     - if older than image file, skip to next part
+     - else read the boxes from the data and return
+ - check if webworkers are suported
+   - if they are, use web workers to compute the boxes and store them in the local data
+   - else, use custom threads to compute the boxes and store them in the local data
+   
+   
+- world:
+  - picture files have _automatic_ names:  screen_x_y
+  - x corresponds to the canvas index (vertical position), y marks the "secret"
+  - You cannot leave screens horizontally
+  - when falling to a position below, we start on the next canvas under screen_(x+1)_y
+    - starting with y and if not successful, try with y-1 until reaching y==1, if still not there, there was no exit and treat it as floor
+  - when jumping "up", try with screen (x-1)_(y+1), and from there down until we get one or we reach y==0.  If not, that is a ceiling and we have to bounce.
+  
+  - when entering a screen, store the enter_position as the new start_pos.  When dying, respawn in this startpos, in the same canvas.  No resetting of the objects
+  (I like the idea of the level getting more and more destroyed as you advance).
+  
+  - loading:
+    - in the beginning, we load screen_1_1.png and hold the rest.  When screen_1_1.png is loaded (even without the boxes), display and start game
+    (show a progress bar meanwhile)
+    - once screen_1_1.png is loaded, start loading screen_2_1.png and so on.  One after the other.  Display progress bars all the time.  Also, schedule
+    the box computing with the new loaded screens as necessary.  In addition, show progress bars if necessary.
+    
+    
+
+So far, so good... from here, maybe think what else is necessary...
+multiple worlds?  (One per directory + selection screen?)
+SFX?
+webpage?
+user generated content?
+
+    

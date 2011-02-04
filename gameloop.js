@@ -47,7 +47,7 @@ var GameControl = function() {
     self.start = function() {
 	var progress = loaderProgress();
 	if (progress < 100) {
-	    setTimeout(self.start(),self.loadInterval); // wait 500ms
+	    setTimeout(self.start,self.loadInterval); // wait 500ms
 	    displayLoadScreen(progress);
 	} else {
 	    prepareGame();

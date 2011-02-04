@@ -1,62 +1,17 @@
 // ---------------------------------------------------------
 // GLOBAL OBJECTS
-var runningLocallyOnFirefox = (location.href.substr(0,7) == "file://");
+var gameControl = new GameControl();
 
-
-var canvasWidth;
-var canvasHeight;
-// var canvasWidth = document.getElementById("canvas1").width;
-// var canvasHeight = document.getElementById("canvas1").height;
-
-// timer engine
-var gameControl = new( function() {
-    this.fps = 60;
-    this.startTime = new Date().getTime();
-    this.stopTime = this.startTime;
-    this.elapsed = 0;
-    this.dt = 0;
-    this.step = 10;
-    this.skip = false;
-} )
-
-// keyboard input
-var keys = new( function() {
-    this.upPressed = false;
-    this.downPressed = false;
-    this.leftPressed = false;
-    this.rightPressed = false;
-    this.upCode = 38;
-    this.downCode = 40;
-    this.leftCode = 37;
-    this.rightCode = 39;
-    this.keyPressed = function(event) {
-	switch (event.keyCode) {
-	    case keys.upCode:  keys.upPressed = true;
-	    break;
-	    case keys.downCode: keys.downPressed = true;
-	    break;
-	    case keys.leftCode: keys.leftPressed = true;
-	    break;
-	    case keys.rightCode: keys.rightPressed = true;
-	    break;
-	}
-    }
-    this.keyReleased = function(event) {
-	switch (event.keyCode) {
-	    case keys.upCode:  keys.upPressed = false;
-	    break;
-	    case keys.downCode: keys.downPressed = false;
-	    break;
-	    case keys.leftCode: keys.leftPressed = false;
-	    break;
-	    case keys.rightCode: keys.rightPressed = false;
-	    break;
-	}
-    }
-})
+var playerKeys = GLOBAL.keyManager.appendMapping( [
+		["up", 38],
+		["down", 40],
+		["left", 37],
+		["right", 39],
+		["action1", 75],
+		["action2", 76]
+	] );
 
 var assets = new( function() {
-    this.bgVisible = false;
     this.walkerImage = new Image();
     this.walkerImage.src = "graphics/walker.png";
     this.level1Image = new Image();
@@ -64,7 +19,6 @@ var assets = new( function() {
     this.bgCanvas = document.createElement('canvas');
     this.baseCanvas = document.createElement('canvas');
     this.levelCanvas = document.createElement('canvas');
-    this.updateAnimations = false;
 })
 
 var player = new( function() {
@@ -77,8 +31,6 @@ var player = new( function() {
     this.speedUp = 0;
     this.speedRight = 0;
     this.standing = false;
-    this.oldx = this.x;
-    this.oldy = this.y;
     this.rejecting = false;
     this.jumpStrength = 160;
     this.horzSpeed = 100;
@@ -88,71 +40,25 @@ var player = new( function() {
     this.frameDelay = 1000/18;
 })
 
-// ------------------------------------------------------------------------
-// CONTROL FUNCTIONS
-function startGame() {
-    if (!assetsLoaded())
-	setTimeout(startGame(),500); // wait 500ms
-    else {
-	loadGame();
-	gameControl.runInterval = setInterval(mainLoop, 1000/gameControl.fps);
-    }
-}
-
-function stopGame() {
-    clearInterval( gameControl.runInterval );
-}
-
-function assetsLoaded() {
+function loaderProgress() {
     if (!assets.walkerImage.complete)
-	return false;
+	return 0;
     if (!assets.level1Image.complete)
-	return false;
-    return true;
+	return 50;
+    return 100;
 }
 
-function loadGame() {
-
-    document.onkeydown = keys.keyPressed;
-    document.onkeyup = keys.keyReleased;
-    
-    canvasWidth = document.getElementById("canvas1").width;
-    canvasHeight = document.getElementById("canvas1").height;
-    assets.bgCanvas.width = canvasWidth;
-    assets.bgCanvas.height = canvasHeight;
+function prepareGame() {
+    graphics.init();
+    assets.bgCanvas.width = graphics.canvasWidth;
+    assets.bgCanvas.height = graphics.canvasHeight;
 
     loadLevel( assets.level1Image );
     
     // paint on screen
-    var canvas = document.getElementById("canvas1");
-    var context = canvas.getContext("2d");
+    graphics.paintBackground();
     
-    context.drawImage(assets.bgCanvas,0,0);
-    
-    updateAnimations();
-}
-
-function mainLoop() {
-    if (gameControl.skip)
-	return;
-    else
-	gameControl.skip = true
-
-    // control the time
-    gameControl.stopTime = new Date().getTime();
-    gameControl.elapsed = gameControl.stopTime - gameControl.startTime;
-    gameControl.startTime = gameControl.stopTime;
-    gameControl.dt = gameControl.dt + gameControl.elapsed;
-	
-    while(gameControl.dt > gameControl.step) {
-	update( gameControl.step );
-	gameControl.dt = gameControl.dt - gameControl.step;
-    }
-    
-    // dt is passed for interpolation
-    draw(gameControl.dt);
-	
-    gameControl.skip = false
+    graphics.updateAnimations();
 }
 
 //---------------------------------------
@@ -172,7 +78,9 @@ function update(dt) {
     var origy = player.y
     
     // vertical movement
-    if (keys.upPressed && player.standing)
+    // if (keys.upPressed && player.standing)
+	// if (keys.check(playerKeyIndex, "up") && player.standing)
+	if (playerKeys.check("up") && player.standing)
 	player.speedUp = player.jumpStrength;
     else 
 	player.speedUp = player.speedUp - player.gravityStrength * dts;
@@ -200,9 +108,13 @@ function update(dt) {
     // horizontal movement
     if (!player.rejecting) {
 	player.speedRight = 0;
-	if (keys.rightPressed)
+	// if (keys.rightPressed)
+	// if (keys.check(playerKeyIndex, "right"))
+	if (playerKeys.check("right"))
 	    player.speedRight = player.horzSpeed;
-	if (keys.leftPressed)
+	// if (keys.leftPressed)
+	if (playerKeys.check("left"))
+	// if (keys.check(playerKeyIndex, "left"))
 	    player.speedRight = -player.horzSpeed;
     }
 	
@@ -244,7 +156,7 @@ function update(dt) {
 	if (assets.objects[ii].activated) {
 	    assets.objects[ii].timer -= dt;
 	    while (assets.objects[ii].timer <= 0) {
-		assets.updateAnimations = true;
+		graphics.setUpdateAnimations();
 		assets.objects[ii].timer += assets.objects[ii].frameDelay;
 		assets.objects[ii].currentFrame++;
 	    }
@@ -253,26 +165,6 @@ function update(dt) {
 		assets.objects[ii].activated = false;
 	    }
 	}
-}
-
-function draw(dt) {
-    var dts = dt/1000;
-    var canvas = document.getElementById("canvas1");
-    var context = canvas.getContext("2d");
-    
-    if (assets.updateAnimations)
-	updateAnimations();
-
-    if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight))
-        context.drawImage(assets.bgCanvas, player.oldx, player.oldy, player.width, player.height, player.oldx, player.oldy, player.width, player.height); 
-    
-    player.oldx = Math.floor(player.x+player.speedRight*dts + 0.5);
-    player.oldy = Math.floor(player.y-player.speedUp*dts + 0.5);
-    
-    if ((player.oldx>=0) && (player.oldx+player.width<=canvasWidth) && (player.oldy>=0) && (player.oldy+player.height<=canvasHeight)) {
-	context.drawImage(assets.walkerImage, player.frame*player.width, 0, player.width, player.height, player.oldx, player.oldy, player.width, player.height);
-    }
-    
 }
 
 function myGetImageData(ctx, sx, sy, sw, sh) {
@@ -290,9 +182,9 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 }
 
 function checkImageData(sx,sy) {
-    if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
+    if ((sx <= 0) || (sx >= graphics.canvasWidth) || (sy <= 0) || (sy >= graphics.canvasHeight))
 	return true;
-    var point = ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3;
+    var point = ( Math.floor(sy) * graphics.canvasWidth + Math.floor(sx) ) * 4 + 3;
     if ( assets.wallData.data[ point ] > 0 )
 	return true;
     // check the objects
@@ -330,9 +222,9 @@ function playerCollidedHorizontal() {
 }
 
 function checkKillData(sx,sy) {
-    if ((sx <= 0) || (sx >= canvasWidth) || (sy <= 0) || (sy >= canvasHeight))
+    if ((sx <= 0) || (sx >= graphics.canvasWidth) || (sy <= 0) || (sy >= graphics.canvasHeight))
 	return false;
-    return ( assets.killData.data[ ( Math.floor(sy) * canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
+    return ( assets.killData.data[ ( Math.floor(sy) * graphics.canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
 }
 
 

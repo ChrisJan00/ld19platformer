@@ -9,6 +9,7 @@ var assets = new( function() {
     this.bgCanvas = document.createElement('canvas');
     this.baseCanvas = document.createElement('canvas');
     this.levelCanvas = document.createElement('canvas');
+    this.climbCanvas = document.createElement('canvas');
 })
 
 var player = new( function() {
@@ -47,8 +48,6 @@ function prepareGame() {
     
     // paint on screen
     graphics.paintBackground();
-    
-    graphics.updateAnimations();
 }
 
 //---------------------------------------
@@ -122,33 +121,44 @@ function update(dt) {
 	
     }
     
-    checkActivatedObjects();
-    
     if (playerDeathTouch())
 	resetPlayer();
 	
     // animation
     if ((player.speedRight != 0) && (player.standing)) {
-    player.animationTimer = player.animationTimer - dt;
-	while (player.animationTimer <= 0) {
-	    player.frame = (player.frame+1)%4;
-	    player.animationTimer = player.animationTimer + player.frameDelay;
-	}
+	    player.animationTimer = player.animationTimer - dt;
+		while (player.animationTimer <= 0) {
+		    player.frame = (player.frame+1)%4;
+		    player.animationTimer = player.animationTimer + player.frameDelay;
+		}
     }
+
+}
+
+function loadLevel( levelImage ) { 
+    var gW = graphics.canvasWidth;   
+    var gH = graphics.canvasHeight;
+    assets.levelImage = levelImage;
     
-    for (var ii=0; ii<assets.objects.length; ii++) 
-	if (assets.objects[ii].activated) {
-	    assets.objects[ii].timer -= dt;
-	    while (assets.objects[ii].timer <= 0) {
-		graphics.setUpdateAnimations();
-		assets.objects[ii].timer += assets.objects[ii].frameDelay;
-		assets.objects[ii].currentFrame++;
-	    }
-	    if (assets.objects[ii].currentFrame >= assets.objects[ii].count) {
-		assets.objects[ii].currentFrame = assets.objects[ii].count-1;
-		assets.objects[ii].activated = false;
-	    }
-	}
+    var levelContext = assets.levelCanvas.getContext('2d');
+    assets.levelCanvas.width = assets.levelImage.width;
+    assets.levelCanvas.height = assets.levelImage.height;
+    levelContext.drawImage(assets.levelImage, 0, 0);
+    
+
+		    
+    // drawing
+    var baseContext = assets.baseCanvas.getContext('2d');
+    assets.baseCanvas.width = gW;
+    assets.baseCanvas.height = gH;
+    baseContext.drawImage(assets.levelImage,0,gH * 0, gW, gH, 0,0, gW, gH);
+    baseContext.drawImage(assets.levelImage,0,gH * 1, gW, gH, 0,0, gW, gH);
+    baseContext.drawImage(assets.levelImage,0,gH * 2, gW, gH, 0,0, gW, gH);
+    assets.killData = myGetImageData( levelContext, 0, gH * 2, gW, gH );
+    assets.wallData = myGetImageData( levelContext, 0, gH * 1, gW, gH );
+    
+    var bgContext = assets.bgCanvas.getContext('2d');
+    bgContext.drawImage(assets.baseCanvas,0,0,gW, gH);
 }
 
 function myGetImageData(ctx, sx, sy, sw, sh) {
@@ -167,16 +177,10 @@ function myGetImageData(ctx, sx, sy, sw, sh) {
 
 function checkImageData(sx,sy) {
     if ((sx <= 0) || (sx >= graphics.canvasWidth) || (sy <= 0) || (sy >= graphics.canvasHeight))
-	return true;
+		return true;
     var point = ( Math.floor(sy) * graphics.canvasWidth + Math.floor(sx) ) * 4 + 3;
     if ( assets.wallData.data[ point ] > 0 )
-	return true;
-    // check the objects
-    for (var ii=0;ii<assets.objects.length; ii++) {
-	var frame = assets.objects[ii].currentFrame;
-	if (assets.objects[ii].colliData[frame].data[point] > 0)
-	    return true;
-    }
+		return true;
     return false;
 }
 

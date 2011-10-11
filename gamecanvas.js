@@ -1,5 +1,15 @@
 // ---------------------------------------------------------
 // GLOBAL OBJECTS
+var gameControl = new GameControl();
+
+var playerKeys = GLOBAL.keyManager.appendMapping( [
+		["up", 38],
+		["down", 40],
+		["left", 37],
+		["right", 39],
+		["action1", 75],
+		["action2", 76]
+	] );
 
 var assets = new( function() {
     this.walkerImage = new Image();
@@ -68,6 +78,7 @@ function update(dt) {
     
     var playerWasClimbing = playerIsClimbing();
     // vertical movement
+
     if (playerWasClimbing) {
     	if (!player.rejecting) {
 	    	player.speedUp = 0;
@@ -82,6 +93,7 @@ function update(dt) {
 	    else 
 			player.speedUp = player.speedUp - player.gravityStrength * dts;
     }
+
     player.y = player.y - player.speedUp * dts;
     
     if (playerCollidedVertical()) {
@@ -105,9 +117,13 @@ function update(dt) {
     // horizontal movement
     if (!player.rejecting) {
 	player.speedRight = 0;
-	if (keys.rightPressed)
+	// if (keys.rightPressed)
+	// if (keys.check(playerKeyIndex, "right"))
+	if (playerKeys.check("right"))
 	    player.speedRight = player.horzSpeed;
-	if (keys.leftPressed)
+	// if (keys.leftPressed)
+	if (playerKeys.check("left"))
+	// if (keys.check(playerKeyIndex, "left"))
 	    player.speedRight = -player.horzSpeed;
     }
 	

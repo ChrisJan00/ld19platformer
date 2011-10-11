@@ -31,52 +31,53 @@ function draw(dt)
 { }
 
 //--------------------------------------------------------------------------------------------------
-// control object
-var gameControl = new( function() {
-    this.fps = 60;
-    this.updateStep = 10; // ms
-    this.loadInterval = 500; // ms
+// control class
+var GameControl = function() {
+	var self = this;
+    self.fps = 60;
+    self.updateStep = 10; // ms
+    self.loadInterval = 500; // ms
     
     // private parts
-    this.startTime = new Date().getTime();
-    this.stopTime = this.startTime;
-    this.elapsed = 0;
-    this.dt = 0; // ms
-    this.skip = false;
-    this.start = function() {
+    self.startTime = new Date().getTime();
+    self.stopTime = self.startTime;
+    self.elapsed = 0;
+    self.dt = 0; // ms
+    self.skip = false;
+    self.start = function() {
 	var progress = loaderProgress();
 	if (progress < 100) {
-	    setTimeout(gameControl.start(),gameControl.loadInterval); // wait 500ms
+	    setTimeout(self.start,self.loadInterval); // wait 500ms
 	    displayLoadScreen(progress);
 	} else {
 	    prepareGame();
-	    gameControl.runInterval = setInterval(gameControl.mainLoop, 1000/gameControl.fps);
+	    self.runInterval = setInterval(self.mainLoop, 1000/self.fps);
 	}
     }
-    this.stop = function() {
-        clearInterval( gameControl.runInterval );
+    self.stop = function() {
+        clearInterval( self.runInterval );
     }
 
-    this.mainLoop = function() {
-	if (gameControl.skip)
+    self.mainLoop = function() {
+	if (self.skip)
 	    return;
 	else
-	    gameControl.skip = true
+	    self.skip = true
 
 	// control the time
-	gameControl.stopTime = new Date().getTime();
-	gameControl.elapsed = gameControl.stopTime - gameControl.startTime;
-	gameControl.startTime = gameControl.stopTime;
-	gameControl.dt = gameControl.dt + gameControl.elapsed;
+	self.stopTime = new Date().getTime();
+	self.elapsed = self.stopTime - self.startTime;
+	self.startTime = self.stopTime;
+	self.dt = self.dt + self.elapsed;
 	
-	while(gameControl.dt > gameControl.updateStep) {
-	    update( gameControl.updateStep );
-	    gameControl.dt = gameControl.dt - gameControl.updateStep;
+	while(self.dt > self.updateStep) {
+	    update( self.updateStep );
+	    self.dt = self.dt - self.updateStep;
 	}
     
 	// dt is passed for interpolation
-	draw(gameControl.dt);
+	draw(self.dt);
 	
-	gameControl.skip = false
+	self.skip = false
     }
-} )
+}

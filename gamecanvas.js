@@ -5,7 +5,7 @@ var assets = new( function() {
     this.walkerImage = new Image();
     this.walkerImage.src = "graphics/walker.png";
     this.level1Image = new Image();
-    this.level1Image.src = "graphics/level1.png";
+    this.level1Image.src = "graphics/map_1_1.png";
     this.bgCanvas = document.createElement('canvas');
     this.baseCanvas = document.createElement('canvas');
     this.levelCanvas = document.createElement('canvas');
@@ -66,12 +66,22 @@ function update(dt) {
     var origx = player.x
     var origy = player.y
     
+    var playerWasClimbing = playerIsClimbing();
     // vertical movement
-    if (keys.upPressed && player.standing)
-	player.speedUp = player.jumpStrength;
-    else 
-	player.speedUp = player.speedUp - player.gravityStrength * dts;
-    
+    if (playerWasClimbing) {
+    	if (!player.rejecting) {
+	    	player.speedUp = 0;
+	    	if (keys.upPressed)
+	    		player.speedUp = player.horzSpeed;
+	    	else if (keys.downPressed)
+	    		player.speedUp = -player.horzSpeed;
+    	}
+    } else {
+	    if (keys.upPressed && player.standing)
+			player.speedUp = player.jumpStrength;
+	    else 
+			player.speedUp = player.speedUp - player.gravityStrength * dts;
+    }
     player.y = player.y - player.speedUp * dts;
     
     if (playerCollidedVertical()) {
@@ -89,8 +99,8 @@ function update(dt) {
 	}
 	player.speedUp = 0;
 	
-    } else
-	player.standing = false;
+    } else 
+	player.standing = playerWasClimbing;
     
     // horizontal movement
     if (!player.rejecting) {
@@ -105,6 +115,7 @@ function update(dt) {
     if (playerCollidedHorizontal()) {
 	player.rejecting = true;
         player.x = origx;
+        
 	// reject the player
 	if (player.speedRight != 0) {
 	    var ii;
@@ -125,7 +136,7 @@ function update(dt) {
 	resetPlayer();
 	
     // animation
-    if ((player.speedRight != 0) && (player.standing)) {
+    if ((player.speedRight != 0 && player.standing) || (player.speedUp !=0 && playerWasClimbing)) {
 	    player.animationTimer = player.animationTimer - dt;
 		while (player.animationTimer <= 0) {
 		    player.frame = (player.frame+1)%4;
@@ -154,8 +165,10 @@ function loadLevel( levelImage ) {
     baseContext.drawImage(assets.levelImage,0,gH * 0, gW, gH, 0,0, gW, gH);
     baseContext.drawImage(assets.levelImage,0,gH * 1, gW, gH, 0,0, gW, gH);
     baseContext.drawImage(assets.levelImage,0,gH * 2, gW, gH, 0,0, gW, gH);
+    baseContext.drawImage(assets.levelImage,0,gH * 3, gW, gH, 0,0, gW, gH);
     assets.killData = myGetImageData( levelContext, 0, gH * 2, gW, gH );
     assets.wallData = myGetImageData( levelContext, 0, gH * 1, gW, gH );
+    assets.climbData = myGetImageData( levelContext, 0, gH * 3, gW, gH );
     
     var bgContext = assets.bgCanvas.getContext('2d');
     bgContext.drawImage(assets.baseCanvas,0,0,gW, gH);
@@ -215,7 +228,6 @@ function checkKillData(sx,sy) {
     return ( assets.killData.data[ ( Math.floor(sy) * graphics.canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
 }
 
-
 function playerDeathTouch() {
     if ((player.speedUp < 0) && checkKillData(player.x+player.width/2, player.y+player.height ))
         return true;
@@ -233,4 +245,15 @@ function playerDeathTouch() {
         return true;
     
     return false;
+}
+
+
+function playerIsClimbing() {
+	return checkClimbData(player.x+player.width/2, player.y+player.height );
+}
+
+function checkClimbData(sx, sy) {
+	if ((sx <= 0) || (sx >= graphics.canvasWidth) || (sy <= 0) || (sy >= graphics.canvasHeight))
+	return false;
+    return ( assets.climbData.data[ ( Math.floor(sy) * graphics.canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
 }

@@ -11,6 +11,10 @@ var playerKeys = GLOBAL.keyManager.appendMapping( [
 		["action2", 76]
 	] );
 
+// NOTE: if a picture is not in the server, the image becomes "complete=true" but size is "0x0".
+// That's how you detect that the image is not there :)
+
+// NOTE: I should preload levels, otherwise the levelswitch might take time
 var assets = new( function() {
     this.walkerImage = new Image();
     this.walkerImage.src = "graphics/walker.png";
@@ -20,6 +24,9 @@ var assets = new( function() {
     this.baseCanvas = document.createElement('canvas');
     this.levelCanvas = document.createElement('canvas');
     this.climbCanvas = document.createElement('canvas');
+
+    this.levelIndex = 1;
+    this.sublevelIndex = 1;
 })
 
 var player = new( function() {
@@ -55,6 +62,7 @@ function prepareGame() {
     assets.bgCanvas.height = graphics.canvasHeight;
 
     loadLevel( assets.level1Image );
+    startLevelPreloading();
     
     // paint on screen
     graphics.paintBackground();
@@ -159,7 +167,12 @@ function update(dt) {
 		    player.animationTimer = player.animationTimer + player.frameDelay;
 		}
     }
-
+    
+    // check preloading
+    if (assets.upLevel.pending && assets.upLevel.levelImage.complete)
+    	updateUpLevelPreloading();
+	if (assets.downLevel.pending && assets.downLevel.levelImage.complete)
+    	updateDownLevelPreloading();
 }
 
 function loadLevel( levelImage ) { 
@@ -189,6 +202,88 @@ function loadLevel( levelImage ) {
     var bgContext = assets.bgCanvas.getContext('2d');
     bgContext.drawImage(assets.baseCanvas,0,0,gW, gH);
 }
+
+///////////// LEVEL LOAD (todo: simplify this)
+function startLevelPreloading() {
+	// start level loading
+	assets.upLevel = {
+		levelIndex : assets.levelIndex-1,
+		sublevelIndex : assets.sublevelIndex+1,
+		pending : true
+	}
+	assets.downLevel = {
+		levelIndex : assets.levelIndex+1,
+		sublevelIndex : assets.sublevelIndex,
+		pending : true
+	}
+	assets.upLevel.levelImage = new Image();
+	assets.upLevel.levelImage.src = "graphics/map_"+assets.upLevel.levelIndex+"_"+assets.upLevel.sublevelIndex+".png";
+	assets.downLevel.levelImage = new Image();
+	assets.downLevel.levelImage.src = "graphics/map_"+assets.downLevel.levelIndex+"_"+assets.downLevel.sublevelIndex+".png";
+}
+
+function updateUpLevelPreloading() {
+	if (assets.upLevel.levelImage.width > 0) {
+		assets.upLevel.exists = true;
+		assets.upLevel.pending = false;
+	}
+	else {
+		assets.upLevel.sublevelIndex = assets.upLevel.sublevelIndex-1;
+		if (assets.upLevel.sublevelIndex==0) {
+			assets.upLevel.exists = false;
+			assets.upLevel.pending = false;
+		}
+		assets.upLevel.levelImage = new Image();
+		assets.upLevel.levelImage.src = "graphics/map_"+assets.upLevel.levelIndex+"_"+assets.upLevel.sublevelIndex+".png";
+	}
+}
+
+function updateDownLevelPreloading() {
+	if (assets.downLevel.levelImage.width > 0) {
+		assets.downLevel.exists = true;
+		assets.downLevel.pending = false;
+	}
+	else {
+		assets.downLevel.sublevelIndex = assets.downLevel.sublevelIndex-1;
+		if (assets.downLevel.sublevelIndex==0) {
+			assets.downLevel.exists = false;
+			assets.downLevel.pending = false;
+		}
+		assets.downLevel.levelImage = new Image();
+		assets.downLevel.levelImage.src = "graphics/map_"+assets.downLevel.levelIndex+"_"+assets.downLevel.sublevelIndex+".png";
+	}
+}
+
+function levelUp() {
+	// leave level through the top
+	if (!assets.upLevel.exists)
+		return;
+		
+	// get the new canvas
+	// load the level
+	assets.levelImage = assets.upLevel.levelImage;
+	assets.levelIndex = assets.upLevel.levelIndex;
+	assets.sublevelIndex = assets.upLevel.sublevelIndex;
+	loadLevel();
+	
+	// start preloading
+	startPreloadingLevels();
+}
+
+function levelDown() {
+	if (!assets.downLevel.exists)
+		return;
+	// load the level
+	assets.levelImage = assets.upLevel.levelImage;
+	assets.levelIndex = assets.upLevel.levelIndex;
+	assets.sublevelIndex = assets.upLevel.sublevelIndex;
+	loadLevel();
+	
+	// start preloading
+	startPreloadingLevels();
+}
+
+//// LEVEL LOAD END: TODO: simplify it
 
 function myGetImageData(ctx, sx, sy, sw, sh) {
     try {

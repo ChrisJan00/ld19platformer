@@ -82,13 +82,13 @@ function update(dt) {
     if (playerWasClimbing) {
     	if (!player.rejecting) {
 	    	player.speedUp = 0;
-	    	if (keys.upPressed)
+	    	if (playerKeys.check("up"))
 	    		player.speedUp = player.horzSpeed;
-	    	else if (keys.downPressed)
+	    	else if (playerKeys.check("down"))
 	    		player.speedUp = -player.horzSpeed;
     	}
     } else {
-	    if (keys.upPressed && player.standing)
+	    if (playerKeys.check("up") && player.standing)
 			player.speedUp = player.jumpStrength;
 	    else 
 			player.speedUp = player.speedUp - player.gravityStrength * dts;

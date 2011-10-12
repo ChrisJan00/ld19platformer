@@ -21,6 +21,12 @@ var Level = new( function () {
 	    bgContext.drawImage(assets.levelImage,0,gH * 1, gW, gH, 0,0, gW, gH);
 	    bgContext.drawImage(assets.levelImage,0,gH * 2, gW, gH, 0,0, gW, gH);
 	    bgContext.drawImage(assets.levelImage,0,gH * 3, gW, gH, 0,0, gW, gH);
+	    
+	    // generate the top layer
+	    var topContext = graphics.topCanvas.getContext('2d');
+	    graphics.topCanvas.width = gW;
+	    graphics.topCanvas.height = gH;
+	    topContext.drawImage(assets.levelImage,0,gH*4, gW, gH, 0,0, gW, gH);
 
 		// get the collision data
 		var originalCanvas = document.createElement('canvas');

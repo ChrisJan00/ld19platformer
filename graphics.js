@@ -8,6 +8,7 @@ var graphics = new( function() {
     self.init = function() {
     	// bgCanvas holds the background (used for draw updates)
     	self.bgCanvas = document.createElement('canvas');
+    	self.topCanvas = document.createElement('canvas');
     
 		self.getDocumentCanvas(1);
 		self.canvasWidth = self.levelCanvas.width;
@@ -18,22 +19,31 @@ var graphics = new( function() {
     }
     
     self.draw = function(dt) {
-	var dts = dt/1000;
-    
-	if ((self.playerInterpolatedX >=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight))
-	    self.levelContext.drawImage(graphics.bgCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height); 
-
-	self.playerInterpolatedX = Math.floor(player.x+player.speedRight*dts + 0.5);
-	self.playerInterpolatedY = Math.floor(player.y-player.speedUp*dts + 0.5);
-    
-	if ((self.playerInterpolatedX>=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight)) {
-	    self.levelContext.drawImage(assets.walkerImage, player.frame*player.width, 0, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
-	}
+		var dts = dt/1000;
+		
+		var newX = Math.floor(player.x+player.speedRight*dts + 0.5);
+	    var newY = Math.floor(player.y-player.speedUp*dts + 0.5);
+	    
+	    if (newX != self.playerInterpolatedX || newY != self.playerInterpolatedY) {
+			if ((self.playerInterpolatedX >=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight)) {
+			    self.levelContext.drawImage(graphics.bgCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
+			    self.levelContext.drawImage(graphics.topCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
+			}
+			
+			self.playerInterpolatedX = newX;
+			self.playerInterpolatedY = newY;
+		    
+			if ((self.playerInterpolatedX>=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight)) {
+			    self.levelContext.drawImage(assets.walkerImage, player.frame*player.width, 0, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
+				self.levelContext.drawImage(graphics.topCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
+			}
+		}
     
     }
 
     self.paintBackground = function() {
 		self.levelContext.drawImage(graphics.bgCanvas,0,0);
+		self.levelContext.drawImage(graphics.topCanvas,0,0);
     }
     
     self.updateAnimation = function(dt) {

@@ -4,6 +4,10 @@
 
 // Interface functions:
 
+// This function is called once at the very beginning in order to start loading stuff
+function load()
+{ }
+
 // This function is called periodically while the game is loading.  You should return an estimation of the percent loaded.
 // The period is specified in gameControl.loadInterval.  You have to manually check that all content (images/sounds).
 function loaderProgress()
@@ -39,45 +43,52 @@ var GameControl = function() {
     self.loadInterval = 500; // ms
     
     // private parts
-    self.startTime = new Date().getTime();
-    self.stopTime = self.startTime;
-    self.elapsed = 0;
-    self.dt = 0; // ms
-    self.skip = false;
+    var _priv = {}
+    _priv.startTime = new Date().getTime();
+    _priv.stopTime = self.startTime;
+    _priv.elapsed = 0;
+    _priv.dt = 0; // ms
+    _priv.skip = false;
+    _priv.firstRun = true;
     self.start = function() {
-	var progress = loaderProgress();
-	if (progress < 100) {
-	    setTimeout(self.start,self.loadInterval); // wait 500ms
-	    displayLoadScreen(progress);
-	} else {
-	    prepareGame();
-	    self.runInterval = setInterval(self.mainLoop, 1000/self.fps);
-	}
+    	if (_priv.firstRun) {
+    		_priv.firstRun = false;
+    		load();
+    	}
+    	
+		var progress = loaderProgress();
+		if (progress < 100) {
+		    setTimeout(self.start,self.loadInterval); // wait 500ms
+		    displayLoadScreen(progress);
+		} else {
+		    prepareGame();
+		    self.runInterval = setInterval(self.mainLoop, 1000/self.fps);
+		}
     }
     self.stop = function() {
         clearInterval( self.runInterval );
     }
 
     self.mainLoop = function() {
-	if (self.skip)
-	    return;
-	else
-	    self.skip = true
-
-	// control the time
-	self.stopTime = new Date().getTime();
-	self.elapsed = self.stopTime - self.startTime;
-	self.startTime = self.stopTime;
-	self.dt = self.dt + self.elapsed;
+		if (_priv.skip)
+		    return;
+		else
+		    _priv.skip = true
 	
-	while(self.dt > self.updateStep) {
-	    update( self.updateStep );
-	    self.dt = self.dt - self.updateStep;
-	}
-    
-	// dt is passed for interpolation
-	draw(self.dt);
-	
-	self.skip = false
+		// control the time
+		_priv.stopTime = new Date().getTime();
+		_priv.elapsed = _priv.stopTime - _priv.startTime;
+		_priv.startTime = _priv.stopTime;
+		_priv.dt = _priv.dt + _priv.elapsed;
+		
+		while(_priv.dt > self.updateStep) {
+		    update( self.updateStep );
+		    _priv.dt = _priv.dt - self.updateStep;
+		}
+	    
+		// dt is passed for interpolation
+		draw(_priv.dt);
+		
+		_priv.skip = false
     }
 }

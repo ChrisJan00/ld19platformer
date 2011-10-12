@@ -18,7 +18,7 @@
 // key manager takes care of the rest.
 
 // example:
-// var playerKeys = GLOBAL.keyManager.appendMapping( keyMappings );
+// var playerKeys = KeyManager.appendMapping( keyMappings );
 // playerKeys.check('up');
 
 
@@ -26,7 +26,7 @@
 // implementation
 
 // keyboard input
-var KeyManager = function() {
+var KeyManager = new (function() {
 	var self = this;
 	self.keyMappings = [];
 	self.keyFlags = [];
@@ -45,13 +45,13 @@ var KeyManager = function() {
 			var self = this;
 			self.index = newIndex;
 			self.check = function( keyName ) {
-				return GLOBAL.keyManager.keyFlags[self.index][keyName];
+				return KeyManager.keyFlags[self.index][keyName];
 			}
 		} );
 	}
 
-    document.onkeydown = function(event) { GLOBAL.keyManager.switchKey( event.keyCode, true ); }
-	document.onkeyup = function(event) { GLOBAL.keyManager.switchKey( event.keyCode, false ); }
+    document.onkeydown = function(event) { KeyManager.switchKey( event.keyCode, true ); }
+	document.onkeyup = function(event) { KeyManager.switchKey( event.keyCode, false ); }
 	self.switchKey = function( code, pressed ) {
 		var setIndex, pairIndex;
 		for(setIndex=0; setIndex<self.keyMappings.length; setIndex++) {
@@ -62,6 +62,5 @@ var KeyManager = function() {
 				}
 		}
     }
-}
-
-GLOBAL.keyManager = new KeyManager();
+    
+})

@@ -128,13 +128,10 @@ function update(dt) {
 		resetPlayer();
 	
     // animation
-   graphics.updateAnimation( dt );
+    graphics.updateAnimation( dt );
     
     // check preloading
-    if (assets.upLevel.pending && assets.upLevel.levelImage.complete)
-    	Level.updateUpLevelPreloading();
-	if (assets.downLevel.pending && assets.downLevel.levelImage.complete)
-    	Level.updateDownLevelPreloading();
+    Level.updatePreloading();
 }
 
 function draw(dt) {

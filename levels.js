@@ -1,5 +1,6 @@
 var Level = new( function () {
 	var self = this;
+	var _private = {}
 	
 	self.init = function() {
     	self.levelIndex = 1;
@@ -37,82 +38,85 @@ var Level = new( function () {
 	    self.startLevelPreloading();
 	}
 	
-	///////////// LEVEL LOAD (todo: simplify this)
 	self.startLevelPreloading = function() {
 		// start level loading
-		assets.upLevel = {
-			levelIndex : assets.levelIndex-1,
-			sublevelIndex : assets.sublevelIndex+1,
-			pending : true
-		}
-		assets.downLevel = {
-			levelIndex : assets.levelIndex+1,
-			sublevelIndex : assets.sublevelIndex,
-			pending : true
-		}
-		assets.upLevel.levelImage = new Image();
-		assets.upLevel.levelImage.src = "graphics/map_"+assets.upLevel.levelIndex+"_"+assets.upLevel.sublevelIndex+".png";
-		assets.downLevel.levelImage = new Image();
-		assets.downLevel.levelImage.src = "graphics/map_"+assets.downLevel.levelIndex+"_"+assets.downLevel.sublevelIndex+".png";
+		_private.preloadingDone = false;
+		_private.upLevel = _private.generateLevelInfo(self.levelIndex-1, self.sublevelIndex+1);
+		_private.downLevel = _private.generateLevelInfo(self.levelIndex+1, self.sublevelIndex);
 	}
 	
-	self.updateUpLevelPreloading = function() {
-		if (assets.upLevel.levelImage.width > 0) {
-			assets.upLevel.exists = true;
-			assets.upLevel.pending = false;
-		}
-		else {
-			assets.upLevel.sublevelIndex = assets.upLevel.sublevelIndex-1;
-			if (assets.upLevel.sublevelIndex==0) {
-				assets.upLevel.exists = false;
-				assets.upLevel.pending = false;
-			}
-			assets.upLevel.levelImage = new Image();
-			assets.upLevel.levelImage.src = "graphics/map_"+assets.upLevel.levelIndex+"_"+assets.upLevel.sublevelIndex+".png";
-		}
-	}
-	
-	self.updateDownLevelPreloading = function() {
-		if (assets.downLevel.levelImage.width > 0) {
-			assets.downLevel.exists = true;
-			assets.downLevel.pending = false;
-		}
-		else {
-			assets.downLevel.sublevelIndex = assets.downLevel.sublevelIndex-1;
-			if (assets.downLevel.sublevelIndex==0) {
-				assets.downLevel.exists = false;
-				assets.downLevel.pending = false;
-			}
-			assets.downLevel.levelImage = new Image();
-			assets.downLevel.levelImage.src = "graphics/map_"+assets.downLevel.levelIndex+"_"+assets.downLevel.sublevelIndex+".png";
+	self.updatePreloading = function() {
+		if (_private.preloadingDone)
+			return;
+		if (_private.checkLevelLoaded(_private.upLevel) && 
+			_private.checkLevelLoaded(_private.downLevel)) {
+				_private.preloadingDone = true;
 		}
 	}
 	
 	self.levelUp = function() {
-		// leave level through the top
-		if (!assets.upLevel.exists)
-			return;
-			
-		// get the new canvas
-		// load the level
-		assets.levelImage = assets.upLevel.levelImage;
-		assets.levelIndex = assets.upLevel.levelIndex;
-		assets.sublevelIndex = assets.upLevel.sublevelIndex;
-		graphics.getCanvas(assets.levelIndex);
-		self.loadLevel();
-
+		_private.activateLevel( _private.upLevel );
 	}
 	
 	self.levelDown = function() {
-		if (!assets.downLevel.exists)
-			return;
-		// load the level
-		assets.levelImage = assets.upLevel.levelImage;
-		assets.levelIndex = assets.upLevel.levelIndex;
-		assets.sublevelIndex = assets.upLevel.sublevelIndex;
-		self.getCanvas();
-		self.loadLevel(assets.levelIndex);
+		_private.activateLevel( _private.downLevel );
 	}
+	
+	
+	///////////// PRIVATE METHODS
+	
+	_private.generateLevelInfo = function(index, subindex) {
+		return {
+			levelIndex : index,
+			sublevelIndex : subindex,
+			pending : true,
+			exists : false,
+			levelImage : _private.getLevelImage(index, subindex)
+		};
+	}
+	
+	_private.getLevelImage = function(index, subindex) {
+		var _levelImage = new Image();
+		_levelImage.src = "graphics/map_"+index+"_"+subindex+".png";
+		return _levelImage;
+	}
+	
+	_private.checkLevelLoaded = function( levelInfo ) {
+		if (!levelInfo.pending)
+			return true;
+	    if (levelInfo.levelImage.complete) {
+	    	if (levelInfo.levelImage.width > 0) {
+				levelInfo.exists = true;
+				levelInfo.pending = false;
+				return true;
+			}
+			else {
+				levelInfo.sublevelIndex = levelInfo.sublevelIndex-1;
+				if (levelInfo.sublevelIndex==0) {
+					levelInfo.exists = false;
+					levelInfo.pending = false;
+					return true;
+				} else {
+					levelInfo.levelImage = _private.getLevelImage(levelInfo.levelIndex, levelInfo.sublevelIndex);
+				}
+			}
+	    }
+	    return false;
+    }
 
+		
+	_private.activateLevel = function( levelInfo ) {	
+		// leave level through the top
+		if (!levelInfo.exists)
+			return;
+			
+		// load the level
+		assets.levelImage = levelInfo.levelImage;
+		self.levelIndex = levelInfo.levelIndex;
+		self.sublevelIndex = levelInfo.sublevelIndex;
+		graphics.getCanvas(self.levelIndex);
+		self.loadLevel();
+
+	}
 
 })

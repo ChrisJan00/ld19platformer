@@ -2,11 +2,10 @@ var Level = new( function () {
 	var self = this;
 	var _private = {}
 	
-	self.init = function() {
-    	self.levelIndex = 1;
-    	self.sublevelIndex = 1;
-    	self.loadLevel();
-	}
+	self.firstIndex = 1;
+    self.lastIndex = 1;
+    self.levelIndex = 1;
+    self.sublevelIndex = 1;	
 	
 	self.loadLevel = function( ) { 
 	    var gW = graphics.canvasWidth;   

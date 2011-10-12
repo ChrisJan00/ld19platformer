@@ -58,6 +58,27 @@ var graphics = new( function() {
     
     self.getDocumentCanvas = function(index) {
     	self.levelCanvas = document.getElementById("canvas_"+index);
+    	
+    	if (!self.levelCanvas) {
+    		// adding just one, at the top or at the bottom of the current one
+    		var newCanvas = document.createElement('canvas');
+    		newCanvas.setAttribute('id','canvas_'+index);
+    		newCanvas.setAttribute('style','image-rendering: optimizespeed ! important;');
+    		newCanvas.setAttribute('moz-opaque','');
+    		newCanvas.setAttribute('width','1000');
+    		newCanvas.setAttribute('height','160');
+    		
+    		var levelContainer = document.getElementById("canvaslist");
+    		if (index < Level.firstIndex) {
+    			Level.firstIndex--;
+    			levelContainer.insertBefore(newCanvas,levelContainer.firstChild);
+    		} else if (index > Level.lastIndex) {
+    			Level.lastIndex++;
+    			levelContainer.appendChild(newCanvas); 
+    		}
+    		self.levelCanvas = newCanvas;
+    	}
+    	
 		self.levelContext = self.levelCanvas.getContext("2d");
     }
 })

@@ -49,7 +49,7 @@ function loaderProgress() {
 
 function prepareGame() {
     graphics.init();
-	Level.init();
+	Level.loadLevel();
 }
 
 //---------------------------------------

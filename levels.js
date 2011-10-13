@@ -139,7 +139,7 @@ var Level = new( function () {
 		player.startx = player.x
 		if (player.y < 0)
 			player.y += graphics.canvasHeight;
-		if (player.y+player.height > graphics.canvasHeight)
+		else
 			player.y -= graphics.canvasHeight;
 		player.starty = player.y
 		// but only when going up!

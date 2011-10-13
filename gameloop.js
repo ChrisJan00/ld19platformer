@@ -41,6 +41,7 @@ var GameControl = function() {
     self.fps = 60;
     self.updateStep = 10; // ms
     self.loadInterval = 500; // ms
+    self.forceDraw = true;
     
     // private parts
     var _priv = {}
@@ -83,11 +84,14 @@ var GameControl = function() {
 		
 		while(_priv.dt > self.updateStep) {
 		    update( self.updateStep );
+		    if (self.forceDraw)
+		    	draw(0);
 		    _priv.dt = _priv.dt - self.updateStep;
 		}
 	    
 		// dt is passed for interpolation
-		draw(_priv.dt);
+		if ((!self.forceDraw) || _priv.dt>0)
+			draw(_priv.dt);
 		
 		_priv.skip = false
     }

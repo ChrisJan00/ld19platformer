@@ -5,7 +5,8 @@ var Level = new( function () {
 	self.firstIndex = 1;
     self.lastIndex = 1;
     self.levelIndex = 1;
-    self.sublevelIndex = 1;	
+    self.sublevelIndex = 1;
+    self.min_dist = 100; // entrances are 100 pixels wide
 	
 	self.loadLevel = function( ) { 
 	    var gW = graphics.canvasWidth;   
@@ -67,6 +68,10 @@ var Level = new( function () {
 		_private.activateLevel( _private.downLevel );
 	}
 	
+	self.goBack = function() {
+		_private.activateLevel( _private.lastLevel );
+	}
+	
 	
 	///////////// PRIVATE METHODS
 	
@@ -115,12 +120,29 @@ var Level = new( function () {
 		if (!levelInfo.exists)
 			return;
 			
+		if ((!_private.lastLevel) || _private.lastLevel.levelIndex != levelInfo.levelIndex || _private.lastLevel.sublevelIndex != levelInfo.sublevelIndex) {
+			_private.lastLevel = _private.generateLevelInfo( self.levelIndex, self.sublevelIndex );
+		}
+		
+		// remove player from view
+		graphics.undrawPlayer();
+			
 		// load the level
 		assets.levelImage = levelInfo.levelImage;
 		self.levelIndex = levelInfo.levelIndex;
 		self.sublevelIndex = levelInfo.sublevelIndex;
-		graphics.getCanvas(self.levelIndex);
+		graphics.getDocumentCanvas(self.levelIndex);
 		self.loadLevel();
+		
+		// set the start and stop positions (and velocities!)
+		// but the actual positions should be stored when the player is standing or climbing (that is, on a velocity of 0)
+		player.startx = player.x
+		if (player.y < 0)
+			player.y += graphics.canvasHeight;
+		if (player.y+player.height > graphics.canvasHeight)
+			player.y -= graphics.canvasHeight;
+		player.starty = player.y
+		// but only when going up!
 
 	}
 

@@ -40,6 +40,13 @@ var graphics = new( function() {
 		}
     
     }
+    
+    self.undrawPlayer = function() {
+    	if ((self.playerInterpolatedX >=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight)) {
+			self.levelContext.drawImage(graphics.bgCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
+			self.levelContext.drawImage(graphics.topCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
+		}
+    }
 
     self.paintBackground = function() {
 		self.levelContext.drawImage(graphics.bgCanvas,0,0);

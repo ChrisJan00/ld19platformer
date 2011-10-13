@@ -1,6 +1,7 @@
 
 var Collision = new (function() {
 	var self = this;
+	var _private = {}
 	
 	// PUBLIC METHODS:
 	// collidedVertical() returns true if collided against ceiling or floor
@@ -72,9 +73,22 @@ var Collision = new (function() {
 	    player.x = player.x + (player.speedRight>0? -ii : ii );
 	}
 	
+	self.checkLevelChange = function() {
+		if (player.y < 0) {
+			if (_private.checkDistSqGreaterThan([player.x, player.y], [player.startx, player.starty],Level.min_dist) )
+				Level.levelUp();
+			else
+				Level.goBack();
+		}
+		if (player.y + player.height > graphics.canvasHeight) {
+			if (_private.checkDistSqGreaterThan([player.x, player.y], [player.startx, player.starty],Level.min_dist) )
+				Level.levelDown();
+			else
+				Level.goBack();
+		}
+	}
 	
 	////////////////////////////////////////// private functions
-	var _private = {}
 	
 	_private.checkWallData = function(sx,sy) {
 	    if ((sx <= 0) || (sx >= graphics.canvasWidth) || (sy <= 0) || (sy >= graphics.canvasHeight))
@@ -95,5 +109,11 @@ var Collision = new (function() {
 		if ((sx <= 0) || (sx >= graphics.canvasWidth) || (sy <= 0) || (sy >= graphics.canvasHeight))
 			return false;
 	    return ( assets.climbData.data[ ( Math.floor(sy) * graphics.canvasWidth + Math.floor(sx) ) * 4 + 3] > 0 );
+	}
+	
+	_private.checkDistSqGreaterThan = function(from, to, dist) {
+		var dx = from[0]-to[0];
+		var dy = from[1]-to[1];
+		return dx*dx+dy*dy > dist*dist;
 	}
 })

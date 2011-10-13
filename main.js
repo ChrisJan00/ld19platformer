@@ -87,6 +87,9 @@ function update(dt) {
 
     player.y = player.y - player.speedUp * dts;
     
+    // special: before checking vertical collisions, check change of level
+    Collision.checkLevelChange();
+    
     if (Collision.collidedVertical()) {
 		player.y = origy;
 		if (player.speedUp < 0) {

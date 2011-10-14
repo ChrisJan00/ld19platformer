@@ -125,18 +125,19 @@ var Level = new( function () {
 		self.levelIndex = levelInfo.levelIndex;
 		self.sublevelIndex = levelInfo.sublevelIndex;
 		graphics.getDocumentCanvas(self.levelIndex);
-		self.loadLevel();
 		
 		// set the start and stop positions (and velocities!)
 		// but the actual positions should be stored when the player is standing or climbing (that is, on a velocity of 0)
-		player.startx = player.x
 		if (player.y < 0)
-			player.y += graphics.canvasHeight;
+			player.y = graphics.canvasHeight - player.height - 1;
 		else
-			player.y -= graphics.canvasHeight;
+			player.y = 0;
+		player.startx = player.x;
 		player.starty = player.y
 		// but only when going up!
-
+		
+		// TODO: this is slow, should be done gradually during preload
+		self.loadLevel();
 	}
 
 })

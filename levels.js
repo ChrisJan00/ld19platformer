@@ -120,6 +120,8 @@ var Level = new( function () {
 		if (!levelInfo.exists)
 			return;
 			
+		gameControl.disableTimer();
+			
 		if ((!_private.lastLevel) || _private.lastLevel.levelIndex != levelInfo.levelIndex || _private.lastLevel.sublevelIndex != levelInfo.sublevelIndex) {
 			_private.lastLevel = _private.generateLevelInfo( self.levelIndex, self.sublevelIndex );
 		}

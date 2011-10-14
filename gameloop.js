@@ -51,6 +51,7 @@ var GameControl = function() {
     _priv.dt = 0; // ms
     _priv.skip = false;
     _priv.firstRun = true;
+    _priv.timerSkipped = false;
     self.start = function() {
     	if (_priv.firstRun) {
     		_priv.firstRun = false;
@@ -82,6 +83,10 @@ var GameControl = function() {
 		_priv.startTime = _priv.stopTime;
 		_priv.dt = _priv.dt + _priv.elapsed;
 		
+		if (_priv.timerSkipped) {
+			self.enableTimer();
+		}
+		
 		while(_priv.dt > self.updateStep) {
 		    update( self.updateStep );
 		    if (self.forceDraw)
@@ -94,5 +99,17 @@ var GameControl = function() {
 			draw(_priv.dt);
 		
 		_priv.skip = false
+    }
+    
+    self.disableTimer = function() {
+    	if (!_priv.timerSkipped) {
+    		_priv.timerSkipTime = new Date().getTime();
+    		_priv.timerSkipped = true;
+    	}
+    }
+    
+    self.enableTimer = function() {
+    	_priv.timerSkipped = false;
+    	_priv.dt -= new Date().getTime() - _priv.timerSkipTime;
     }
 }

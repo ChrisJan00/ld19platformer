@@ -77,14 +77,10 @@ var Collision = new (function() {
 		if (player.y < 0) {
 			if (_private.checkDistSqGreaterThan([player.x, player.y], [player.startx, player.starty],Level.min_dist) )
 				Level.levelUp();
-			else
-				Level.goBack();
 		}
 		if (player.y + player.height > graphics.canvasHeight) {
 			if (_private.checkDistSqGreaterThan([player.x, player.y], [player.startx, player.starty],Level.min_dist) )
 				Level.levelDown();
-			else
-				Level.goBack();
 		}
 	}
 	

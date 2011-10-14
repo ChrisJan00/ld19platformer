@@ -68,11 +68,6 @@ var Level = new( function () {
 		_private.activateLevel( _private.downLevel );
 	}
 	
-	self.goBack = function() {
-		_private.activateLevel( _private.lastLevel );
-	}
-	
-	
 	///////////// PRIVATE METHODS
 	
 	_private.generateLevelInfo = function(index, subindex) {
@@ -121,10 +116,6 @@ var Level = new( function () {
 			return;
 			
 		gameControl.disableTimer();
-			
-		if ((!_private.lastLevel) || _private.lastLevel.levelIndex != levelInfo.levelIndex || _private.lastLevel.sublevelIndex != levelInfo.sublevelIndex) {
-			_private.lastLevel = _private.generateLevelInfo( self.levelIndex, self.sublevelIndex );
-		}
 		
 		// remove player from view
 		graphics.undrawPlayer();

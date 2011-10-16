@@ -50,8 +50,9 @@ var KeyManager = new (function() {
 		} );
 	}
 
-    document.onkeydown = function(event) { KeyManager.switchKey( event.keyCode, true ); }
-	document.onkeyup = function(event) { KeyManager.switchKey( event.keyCode, false ); }
+	// the "return false" consumes the event and prevents the browser to respond to it
+    document.onkeydown = function(event) { KeyManager.switchKey( event.keyCode, true ); return false; }
+	document.onkeyup = function(event) { KeyManager.switchKey( event.keyCode, false ); return false; }
 	self.switchKey = function( code, pressed ) {
 		var setIndex, pairIndex;
 		for(setIndex=0; setIndex<self.keyMappings.length; setIndex++) {

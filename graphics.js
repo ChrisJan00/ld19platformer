@@ -1,6 +1,7 @@
 
 var graphics = new( function() {
 	var self = this;
+	var _private = {}
 	
     self.playerInterpolatedX = 0;
     self.playerInterpolatedY = 0;
@@ -87,5 +88,17 @@ var graphics = new( function() {
     	}
     	
 		self.levelContext = self.levelCanvas.getContext("2d");
+		_private.scrollToCurrentCanvas( );
+    }
+    
+    _private.scrollToCurrentCanvas = function(  ) {
+    	var x = 0;
+    	var y = 0;
+    	var obj = self.levelCanvas;
+    	while (obj) {
+    		y += obj.offsetTop;
+    		obj = obj.offsetParent;
+    	}
+    	window.scrollTo(x,y);
     }
 })

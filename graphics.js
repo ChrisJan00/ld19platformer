@@ -26,18 +26,12 @@ var graphics = new( function() {
 	    var newY = Math.floor(player.y-player.speedUp*dts + 0.5);
 	    
 	    if (newX != self.playerInterpolatedX || newY != self.playerInterpolatedY) {
-			if ((self.playerInterpolatedX >=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight)) {
-			    self.levelContext.drawImage(graphics.bgCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
-			    self.levelContext.drawImage(graphics.topCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
-			}
+			self.undrawPlayer();
 			
 			self.playerInterpolatedX = newX;
 			self.playerInterpolatedY = newY;
 		    
-			if ((self.playerInterpolatedX>=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight)) {
-			    self.levelContext.drawImage(assets.walkerImage, player.frame*player.width, 0, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
-				self.levelContext.drawImage(graphics.topCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
-			}
+			self.redrawPlayer();
 		}
     
     }
@@ -45,6 +39,13 @@ var graphics = new( function() {
     self.undrawPlayer = function() {
     	if ((self.playerInterpolatedX >=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight)) {
 			self.levelContext.drawImage(graphics.bgCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
+			self.levelContext.drawImage(graphics.topCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
+		}
+    }
+    
+    self.redrawPlayer = function() {
+    	if ((self.playerInterpolatedX>=0) && (self.playerInterpolatedX+player.width<=self.canvasWidth) && (self.playerInterpolatedY>=0) && (self.playerInterpolatedY+player.height<=self.canvasHeight)) {
+		    self.levelContext.drawImage(assets.walkerImage, player.frame*player.width, 0, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
 			self.levelContext.drawImage(graphics.topCanvas, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height, self.playerInterpolatedX, self.playerInterpolatedY, player.width, player.height);
 		}
     }

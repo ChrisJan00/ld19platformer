@@ -51,17 +51,21 @@ var KeyManager = new (function() {
 	}
 
 	// the "return false" consumes the event and prevents the browser to respond to it
-    document.onkeydown = function(event) { KeyManager.switchKey( event.keyCode, true ); return false; }
-	document.onkeyup = function(event) { KeyManager.switchKey( event.keyCode, false ); return false; }
+    document.onkeydown = function(event) { return KeyManager.switchKey( event.keyCode, true );}
+	document.onkeyup = function(event) { return KeyManager.switchKey( event.keyCode, false ); }
 	self.switchKey = function( code, pressed ) {
 		var setIndex, pairIndex;
+		var consumed = false;
 		for(setIndex=0; setIndex<self.keyMappings.length; setIndex++) {
 			var set = self.keyMappings[setIndex];
 			for (pairIndex=0; pairIndex<set.length; pairIndex++)
 				if (code == set[pairIndex][1]) {
 					self.keyFlags[setIndex][set[pairIndex][0]] = pressed;
+					consumed = true;
+					break;
 				}
 		}
+		return !consumed;
     }
     
 })

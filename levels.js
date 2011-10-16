@@ -35,9 +35,9 @@ var Level = new( function () {
 	    originalCanvas.height = assets.levelImage.height;
 	    originalContext.drawImage(assets.levelImage, 0, 0);
 
-	    assets.killData = myGetImageData( originalContext, 0, gH * 2, gW, gH );
-	    assets.wallData = myGetImageData( originalContext, 0, gH * 1, gW, gH );
-	    assets.climbData = myGetImageData( originalContext, 0, gH * 3, gW, gH );
+	    assets.killData = originalContext.getImageData(0, gH * 2, gW, gH );
+	    assets.wallData = originalContext.getImageData(0, gH * 1, gW, gH );
+	    assets.climbData = originalContext.getImageData(0, gH * 3, gW, gH );
 
 		// paint the background
 	    graphics.paintBackground();
@@ -172,17 +172,17 @@ var Level = new( function () {
     			return false;
     		}
     		case 9: {
-    			levelInfo.killData = myGetImageData( levelInfo.originalContext, 0, gH * 2, gW, gH );
+    			levelInfo.killData = levelInfo.originalContext.getImageData(0, gH * 2, gW, gH );
     			levelInfo.cachingStep = 10;
     			return false;
     		}
     		case 10: {
-    			levelInfo.wallData = myGetImageData( levelInfo.originalContext, 0, gH * 1, gW, gH );
+    			levelInfo.wallData = levelInfo.originalContext.getImageData(0, gH * 1, gW, gH );
     			levelInfo.cachingStep = 11;
     			return false;
     		}
     		case 11: {
-    			levelInfo.climbData = myGetImageData( levelInfo.originalContext, 0, gH * 3, gW, gH );
+    			levelInfo.climbData = levelInfo.originalContext.getImageData(0, gH * 3, gW, gH );
     			levelInfo.cachingStep = 12;
     			return false;
     		}

@@ -72,7 +72,7 @@ var graphics = new( function() {
     		// adding just one, at the top or at the bottom of the current one
     		var newCanvas = document.createElement('canvas');
     		newCanvas.setAttribute('id','canvas_'+index);
-    		newCanvas.setAttribute('style','image-rendering: optimizespeed ! important; float:left');
+    		newCanvas.setAttribute('style','image-rendering: optimizespeed ! important');
     		newCanvas.setAttribute('moz-opaque','');
     		newCanvas.setAttribute('width','1000');
     		newCanvas.setAttribute('height','160');

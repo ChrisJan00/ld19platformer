@@ -82,6 +82,10 @@ var Level = new( function () {
 	
 	_private.getLevelImage = function(index, subindex) {
 		var _levelImage = new Image();
+		_levelImage.onerror = function() {
+			_levelImage.isLoading = false;
+		}
+		_levelImage.isLoading = true;
 		_levelImage.src = "graphics/map_"+index+"_"+subindex+".png";
 		return _levelImage;
 	}
@@ -89,7 +93,7 @@ var Level = new( function () {
 	_private.checkLevelLoaded = function( levelInfo ) {
 		if (!levelInfo.pending)
 			return true;
-	    if (levelInfo.levelImage.complete) {
+	    if (levelInfo.levelImage.complete || !levelInfo.levelImage.isLoading) {
 	    	if (levelInfo.levelImage.width > 0) {
 	    		if (_private.continueCaching(levelInfo)) {
 					levelInfo.exists = true;
